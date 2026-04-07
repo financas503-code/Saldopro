@@ -7,6 +7,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <style>
 :root {
@@ -60,6 +61,10 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .receitaItem { border-left: 4px solid var(--accent-green); }
 .despesaItem { border-left: 4px solid var(--accent-red); }
 
+.transacao-actions { display: flex; gap: 5px; }
+.btn-edit { background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.btn-delete { background: var(--accent-red); color: white; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+
 /* LOADING & ALERTS */
 .loading { display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc; border-top: 2px solid var(--accent-orange); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -69,6 +74,13 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 
 /* GRÁFICOS */
 canvas { max-height: 300px; }
+
+/* MODAL */
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+.modal.show { display: flex; align-items: center; justify-content: center; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; max-width: 500px; width: 90%; border: 1px solid var(--border-color); }
+.modal-content h2 { color: var(--accent-orange); margin-bottom: 15px; }
+.modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 </style>
 </head>
 
@@ -104,6 +116,7 @@ canvas { max-height: 300px; }
             </div>
             <input id="metaValor" type="tel" placeholder="Meta de sobra (R$)">
             <button class="btn-primary" onclick="salvarMeta()">Salvar Meta</button>
+            <div style="text-align: center; font-size: 0.9rem; color: var(--accent-orange); margin-top: 10px;" id="metaAtual"></div>
         </div>
 
         <div class="card">
@@ -127,7 +140,7 @@ canvas { max-height: 300px; }
                 <input id="parcelas" type="number" value="1" min="1">
                 <select id="tipoParcela"><option value="total">Valor Total</option><option value="mensal">Valor Mensal</option></select>
             </div>
-            <button class="btn-primary" onclick="add()">Registrar na Nuvem</button>
+            <button class="btn-primary" onclick="add()">Adicionar Lançamento</button>
         </div>
         <div id="listaLancamentos"></div>
     </div>
@@ -149,7 +162,14 @@ canvas { max-height: 300px; }
             <h3>Contas</h3>
             <div style="display:flex; gap:5px; margin-bottom: 8px;">
                 <input id="novaConta" placeholder="Banco" style="flex:1;">
-                <select id="tipoConta" style="flex:1;"><option>Corrente</option><option>Crédito</option></select>
+                <select id="tipoConta" style="flex:1;">
+                    <option>Corrente</option>
+                    <option>Crédito</option>
+                    <option>Débito</option>
+                    <option>Poupança</option>
+                    <option>Investimento</option>
+                    <option>Dinheiro</option>
+                </select>
             </div>
             <button class="btn-primary" onclick="addConfig('contas')">Adicionar Conta</button>
             <div id="listaAdminContas" style="margin-top:10px"></div>
@@ -174,6 +194,23 @@ canvas { max-height: 300px; }
     </nav>
 </div>
 
+<!-- MODAL DE EDIÇÃO -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h2>Editar Lançamento</h2>
+        <select id="editTipo"><option value="receita">Receita</option><option value="despesa">Despesa</option></select>
+        <input id="editDescricao" placeholder="Descrição">
+        <input id="editValor" type="tel" placeholder="R$ 0,00">
+        <input id="editData" type="date">
+        <select id="editConta"></select>
+        <select id="editCategoria"></select>
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-primary" onclick="salvarEdicao()">Salvar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // ===== CONFIGURAÇÃO SUPABASE =====
 const SUPABASE_URL = 'https://mjgxiqjsmfnmfkvtbdka.supabase.co';
@@ -187,6 +224,7 @@ let contas = JSON.parse(localStorage.getItem('contas')) || [{nome:'Itaú', tipo:
 let categorias = JSON.parse(localStorage.getItem('categorias')) || ['Mercado', 'Transporte', 'Casa', 'Lazer'];
 let userSession = null;
 let chartsInitialized = false;
+let transacaoEmEdicao = null;
 
 // ===== FUNÇÕES DE ALERT =====
 function showAlert(msg, type = 'success') {
@@ -237,7 +275,6 @@ async function handleAuth(type) {
         btn.innerHTML = '<span class="loading"></span>';
 
         if(type === 'signup') {
-            // Verificar se e-mail já existe
             const { data: existingUsers } = await supabaseClient.auth.admin.listUsers();
             const emailExists = existingUsers?.users?.some(u => u.email === email);
             
@@ -286,6 +323,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     if(session) {
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('btnPrivacy').style.display = 'block';
         carregarDados();
     } else {
         document.getElementById('auth-screen').classList.remove('hidden');
@@ -366,7 +404,7 @@ async function add() {
         const { error } = await supabaseClient.from('transacoes').insert(inserts);
         
         btn.disabled = false;
-        btn.innerText = 'Registrar na Nuvem';
+        btn.innerText = 'Adicionar Lançamento';
 
         if(error) {
             alert('❌ Erro ao salvar: ' + error.message);
@@ -380,7 +418,7 @@ async function add() {
     } catch(e) {
         alert('❌ Erro: ' + e.message);
         btn.disabled = false;
-        btn.innerText = 'Registrar na Nuvem';
+        btn.innerText = 'Adicionar Lançamento';
     }
 }
 
@@ -406,6 +444,75 @@ async function salvarMeta() {
         } else {
             alert('✅ Meta salva!');
             document.getElementById('metaValor').value = '';
+            await carregarDados();
+        }
+    } catch(e) {
+        alert('❌ Erro: ' + e.message);
+    }
+}
+
+// ===== EDITAR TRANSAÇÃO =====
+function abrirEdicao(transacao) {
+    transacaoEmEdicao = transacao;
+    document.getElementById('editTipo').value = transacao.tipo;
+    document.getElementById('editDescricao').value = transacao.descricao;
+    document.getElementById('editValor').value = format(transacao.valor).replace(/[^\d,]/g, '').replace(',', '.');
+    document.getElementById('editData').value = transacao.data;
+    document.getElementById('editConta').value = transacao.conta;
+    document.getElementById('editCategoria').value = transacao.categoria;
+    
+    renderConfigs();
+    
+    document.getElementById('editModal').classList.add('show');
+}
+
+function fecharModal() {
+    document.getElementById('editModal').classList.remove('show');
+    transacaoEmEdicao = null;
+}
+
+async function salvarEdicao() {
+    if(!transacaoEmEdicao) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('transacoes')
+            .update({
+                tipo: document.getElementById('editTipo').value,
+                descricao: document.getElementById('editDescricao').value,
+                valor: parseMoeda(document.getElementById('editValor').value),
+                data: document.getElementById('editData').value,
+                conta: document.getElementById('editConta').value,
+                categoria: document.getElementById('editCategoria').value
+            })
+            .eq('id', transacaoEmEdicao.id);
+
+        if(error) {
+            alert('❌ Erro ao atualizar: ' + error.message);
+        } else {
+            alert('✅ Transação atualizada!');
+            fecharModal();
+            await carregarDados();
+        }
+    } catch(e) {
+        alert('❌ Erro: ' + e.message);
+    }
+}
+
+// ===== DELETAR TRANSAÇÃO =====
+async function deletarTransacao(id) {
+    if(!confirm('Tem certeza que deseja deletar esta transação?')) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('transacoes')
+            .delete()
+            .eq('id', id);
+
+        if(error) {
+            alert('❌ Erro ao deletar: ' + error.message);
+        } else {
+            alert('✅ Transação deletada!');
             await carregarDados();
         }
     } catch(e) {
@@ -450,8 +557,14 @@ function atualizar() {
         if(ehR) tR += t.valor; else tD += t.valor;
         const dataFormatada = new Date(t.data + 'T00:00:00').toLocaleDateString('pt-BR');
         lista.innerHTML += `<div class="transacao ${ehR?'receitaItem':'despesaItem'}">
-            <span>${t.descricao}<br><small>${dataFormatada}</small></span>
-            <div style="text-align:right"><b class="dash-val">${format(t.valor)}</b></div>
+            <div style="flex:1;">
+                <span>${t.descricao}<br><small>${dataFormatada}</small></span>
+            </div>
+            <div style="text-align:right; margin-right: 10px;"><b class="dash-val">${format(t.valor)}</b></div>
+            <div class="transacao-actions">
+                <button class="btn-edit" onclick="abrirEdicao(${JSON.stringify(t).replace(/"/g, '&quot;')})">✏️</button>
+                <button class="btn-delete" onclick="deletarTransacao('${t.id}')">🗑️</button>
+            </div>
         </div>`;
     });
 
@@ -460,11 +573,34 @@ function atualizar() {
     const saldo = tR - tD;
     document.getElementById('resumoSaldo').innerText = format(saldo);
 
-    // Atualizar meta
+    // Atualizar meta cumulativa
+    const mesInicio = document.getElementById('mesInicio').value;
+    const mesFim = document.getElementById('mesFim').value;
+    let metaCumulativa = 0;
+    
+    if(mesInicio) {
+        const dataInicio = new Date(mesInicio + '-01');
+        const dataFim = mesFim ? new Date(mesFim + '-01') : dataInicio;
+        
+        for(let d = new Date(dataInicio); d <= dataFim; d.setMonth(d.getMonth() + 1)) {
+            const mesStr = d.toISOString().slice(0, 7);
+            if(nuvemMetas[mesStr]) {
+                metaCumulativa += nuvemMetas[mesStr];
+            }
+        }
+    }
+
+    if(metaCumulativa > 0) {
+        document.getElementById('metaAtual').innerText = `Meta: ${format(metaCumulativa)}`;
+    } else {
+        document.getElementById('metaAtual').innerText = '';
+    }
+
+    // Atualizar status da meta
     const mesAtual = document.getElementById('mesInicio').value;
     if(mesAtual && nuvemMetas[mesAtual]) {
         const metaDiv = document.getElementById('metaStatus');
-        const meta = nuvemMetas[mesAtual];
+        const meta = metaCumulativa > 0 ? metaCumulativa : nuvemMetas[mesAtual];
         const status = saldo >= meta ? '✅ Meta atingida!' : `❌ Faltam ${format(meta - saldo)}`;
         metaDiv.innerText = status;
     }
@@ -495,6 +631,9 @@ function desenharGraficos() {
 
     const ctx1 = document.getElementById('grafico1');
     if(ctx1.chart) ctx1.chart.destroy();
+    
+    Chart.register(ChartDataLabels);
+    
     ctx1.chart = new Chart(ctx1, {
         type: 'bar',
         data: {
@@ -506,28 +645,37 @@ function desenharGraficos() {
                 {
                     label: 'Receitas',
                     data: receitas,
-                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
                     borderColor: 'var(--accent-green)',
-                    borderWidth: 1
+                    borderWidth: 2
                 },
                 {
                     label: 'Despesas',
                     data: despesas,
-                    backgroundColor: 'rgba(244, 63, 94, 0.5)',
+                    backgroundColor: 'rgba(244, 63, 94, 0.7)',
                     borderColor: 'var(--accent-red)',
-                    borderWidth: 1
+                    borderWidth: 2
                 }
             ]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {labels: {color: 'var(--text-main)'}},
-                tooltip: {callbacks: {label: (c) => format(c.parsed.y)}},
+                legend: {labels: {color: 'var(--text-main)', font: {size: 12, weight: 'bold'}}},
+                tooltip: {
+                    callbacks: {label: (c) => format(c.parsed.y)},
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: 'var(--text-main)',
+                    bodyColor: 'var(--text-main)',
+                    padding: 10,
+                    font: {size: 14, weight: 'bold'}
+                },
                 datalabels: {
                     color: 'var(--text-main)',
-                    font: {weight: 'bold'},
-                    formatter: (value) => format(value)
+                    font: {weight: 'bold', size: 13},
+                    formatter: (value) => value > 0 ? format(value) : '',
+                    anchor: 'end',
+                    align: 'top'
                 }
             },
             scales: {
@@ -535,11 +683,14 @@ function desenharGraficos() {
                     beginAtZero: true,
                     ticks: {
                         color: 'var(--text-muted)',
-                        callback: (value) => format(value)
-                    }
+                        callback: (value) => format(value),
+                        font: {size: 11, weight: 'bold'}
+                    },
+                    grid: {color: 'rgba(255,255,255,0.1)'}
                 },
                 x: {
-                    ticks: {color: 'var(--text-muted)'}
+                    ticks: {color: 'var(--text-muted)', font: {size: 11, weight: 'bold'}},
+                    grid: {display: false}
                 }
             }
         }
@@ -556,24 +707,38 @@ function desenharGraficos() {
     const cores = ['#FF6600', '#f43f5e', '#10b981', '#3b82f6', '#a78bfa', '#f97316'];
     const ctx2 = document.getElementById('grafico2');
     if(ctx2.chart) ctx2.chart.destroy();
+    
     ctx2.chart = new Chart(ctx2, {
         type: 'doughnut',
         data: {
             labels: Object.keys(porCategoria),
             datasets: [{
                 data: Object.values(porCategoria),
-                backgroundColor: cores.slice(0, Object.keys(porCategoria).length)
+                backgroundColor: cores.slice(0, Object.keys(porCategoria).length),
+                borderColor: '#111111',
+                borderWidth: 2
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {labels: {color: 'var(--text-main)'}},
-                tooltip: {callbacks: {label: (c) => format(c.parsed)}},
+                legend: {
+                    labels: {color: 'var(--text-main)', font: {size: 12, weight: 'bold'}, padding: 15}
+                },
+                tooltip: {
+                    callbacks: {label: (c) => format(c.parsed)},
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: 'var(--text-main)',
+                    bodyColor: 'var(--text-main)',
+                    padding: 10,
+                    font: {size: 14, weight: 'bold'}
+                },
                 datalabels: {
                     color: 'var(--text-main)',
-                    font: {weight: 'bold'},
-                    formatter: (value) => format(value)
+                    font: {weight: 'bold', size: 13},
+                    formatter: (value) => value > 0 ? format(value) : '',
+                    anchor: 'center',
+                    align: 'center'
                 }
             }
         }
@@ -587,6 +752,12 @@ function trocarAba(aba, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
 
+    if(aba === 'home') {
+        document.getElementById('btnPrivacy').style.display = 'block';
+    } else {
+        document.getElementById('btnPrivacy').style.display = 'none';
+    }
+
     if(aba === 'graficos') {
         setTimeout(() => desenharGraficos(), 100);
     }
@@ -595,16 +766,28 @@ function trocarAba(aba, el) {
 // ===== RENDERIZAR CONFIGS =====
 function renderConfigs() {
     const sc = document.getElementById('conta'), scat = document.getElementById('categoria');
+    const esc = document.getElementById('editConta'), escat = document.getElementById('editCategoria');
+    
     sc.innerHTML = ''; scat.innerHTML = '';
-    contas.forEach(c => sc.add(new Option(c.nome, c.nome)));
-    categorias.forEach(c => scat.add(new Option(c, c)));
+    if(esc) esc.innerHTML = '';
+    if(escat) escat.innerHTML = '';
+    
+    contas.forEach(c => {
+        const opt = `${c.nome} (${c.tipo})`;
+        sc.add(new Option(opt, opt));
+        if(esc) esc.add(new Option(opt, opt));
+    });
+    categorias.forEach(c => {
+        scat.add(new Option(c, c));
+        if(escat) escat.add(new Option(c, c));
+    });
 
     // Renderizar lista de contas
     const listContas = document.getElementById('listaAdminContas');
     listContas.innerHTML = contas.map((c, i) => 
         `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
             <span>${c.nome} (${c.tipo})</span>
-            <button class="btn-secondary" style="width:60px; height:32px;" onclick="removerConta(${i})">❌</button>
+            <button class="btn-delete" style="width:60px; height:32px;" onclick="removerConta(${i})">❌</button>
         </div>`
     ).join('');
 
@@ -613,7 +796,7 @@ function renderConfigs() {
     listCat.innerHTML = categorias.map((c, i) => 
         `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
             <span>${c}</span>
-            <button class="btn-secondary" style="width:60px; height:32px;" onclick="removerCategoria(${i})">❌</button>
+            <button class="btn-delete" style="width:60px; height:32px;" onclick="removerCategoria(${i})">❌</button>
         </div>`
     ).join('');
 }
@@ -622,6 +805,7 @@ function removerConta(index) {
     contas.splice(index, 1);
     localStorage.setItem('contas', JSON.stringify(contas));
     renderConfigs();
+    atualizar();
 }
 
 function removerCategoria(index) {
@@ -663,8 +847,23 @@ document.getElementById('metaValor').oninput = e => {
     e.target.value = (v/100).toFixed(2).replace('.', ',');
 };
 
+if(document.getElementById('editValor')) {
+    document.getElementById('editValor').oninput = e => {
+        let v = e.target.value.replace(/\D/g, '');
+        e.target.value = (v/100).toFixed(2).replace('.', ',');
+    };
+}
+
 // Definir data atual como padrão
 document.getElementById('data').valueAsDate = new Date();
+
+// Fechar modal ao clicar fora
+window.onclick = (e) => {
+    const modal = document.getElementById('editModal');
+    if(e.target === modal) {
+        fecharModal();
+    }
+};
 </script>
 </body>
 </html>
