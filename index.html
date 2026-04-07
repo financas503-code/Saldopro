@@ -53,8 +53,8 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .dash-item { padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .dash-val { font-size: 1.1rem; font-weight: bold; }
 
-.tabs { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: #080808; border-top: 1px solid var(--border-color); padding-bottom: var(--safe-area-bottom); z-index: 1000; }
-.tab { flex: 1; text-align: center; padding: 15px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); }
+.tabs { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: #080808; border-top: 1px solid var(--border-color); padding-bottom: var(--safe-area-bottom); z-index: 1000; overflow-x: auto; }
+.tab { flex: 1; text-align: center; padding: 15px; cursor: pointer; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
 .tab.active { color: var(--accent-orange); border-top: 2px solid var(--accent-orange); }
 
 .transacao { padding: 15px; margin: 8px 0; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; background: #080808; border: 1px solid #1a1a1a; }
@@ -80,14 +80,48 @@ canvas { max-height: 400px !important; width: 100% !important; }
 /* MODAL */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); overflow-y: auto; }
 .modal.show { display: flex; align-items: center; justify-content: center; }
-.modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; max-width: 500px; width: 90%; border: 1px solid var(--border-color); }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; max-width: 500px; width: 90%; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
 .modal-content h2 { color: var(--accent-orange); margin-bottom: 15px; }
 .modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+
+/* ÍCONES DE CATEGORIAS */
+.categoria-icon { display: inline-block; margin-right: 5px; }
+
+/* SALDO POR CONTA */
+.conta-saldo { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
+.conta-saldo strong { color: var(--accent-orange); }
+
+/* TABELAS */
+.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.tabela th { background: rgba(255,255,255,0.05); padding: 10px; text-align: left; color: var(--accent-orange); }
+.tabela td { padding: 10px; border-bottom: 1px solid var(--border-color); }
+.tabela tr:hover { background: rgba(255,255,255,0.03); }
+
+/* BADGE */
+.badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+.badge-green { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+.badge-red { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
 </style>
 </head>
 
 <body>
 
+<!-- TELA DE RESET DE SENHA -->
+<div id="reset-screen" class="hidden">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; max-width: 450px; margin: auto; padding: 20px;">
+        <div class="login-title">SALDO + PRÓ</div>
+        <div class="login-card">
+            <h2>Redefinir Senha</h2>
+            <div id="reset-alert"></div>
+            <input type="password" id="novaSenha" placeholder="Nova senha">
+            <input type="password" id="confirmarSenha" placeholder="Confirmar senha">
+            <button class="btn-primary" onclick="confirmarResetSenha()">Redefinir Senha</button>
+            <button class="btn-secondary" onclick="voltarLogin()" style="margin-top: 10px;">Voltar</button>
+        </div>
+    </div>
+</div>
+
+<!-- TELA DE LOGIN -->
 <div id="auth-screen">
     <div class="login-title">SALDO + PRÓ</div>
     <div class="login-card">
@@ -103,6 +137,7 @@ canvas { max-height: 400px !important; width: 100% !important; }
     </div>
 </div>
 
+<!-- APP PRINCIPAL -->
 <div id="main-app" class="container hidden">
     <div class="header">
         <h1>Saldo + Pró</h1>
@@ -142,6 +177,7 @@ canvas { max-height: 400px !important; width: 100% !important; }
                 <select id="tipoParcelamento">
                     <option value="fixo">Compra Fixa</option>
                     <option value="parcelado">Parcelado</option>
+                    <option value="recorrente">Recorrente</option>
                 </select>
                 <input id="parcelas" type="number" value="1" min="1" max="12" placeholder="Parcelas (até 12)">
             </div>
@@ -162,6 +198,48 @@ canvas { max-height: 400px !important; width: 100% !important; }
         <div class="graficos-container">
             <div class="card"><h3>Distribuição de Despesas</h3><div style="position: relative; height: 350px;"><canvas id="grafico2"></canvas></div></div>
             <div class="card"><h3>Balanço Mensal</h3><div style="position: relative; height: 350px;"><canvas id="grafico1"></canvas></div></div>
+            <div class="card"><h3>Evolução Patrimonial</h3><div style="position: relative; height: 350px;"><canvas id="grafico3"></canvas></div></div>
+            <div class="card"><h3>Comparativo Mês a Mês</h3><div style="position: relative; height: 350px;"><canvas id="grafico4"></canvas></div></div>
+        </div>
+    </div>
+
+    <div id="relatorios" class="page hidden">
+        <div class="card">
+            <h3>Top Categorias</h3>
+            <div id="topCategorias"></div>
+        </div>
+        <div class="card">
+            <h3>Histórico de Metas</h3>
+            <table class="tabela">
+                <thead>
+                    <tr>
+                        <th>Mês</th>
+                        <th>Meta</th>
+                        <th>Realizado</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaMetas"></tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Orçamento por Categoria</h3>
+            <div id="orcamentos"></div>
+        </div>
+    </div>
+
+    <div id="contas" class="page hidden">
+        <div class="card">
+            <h3>Saldo por Conta</h3>
+            <div id="saldoContas"></div>
+        </div>
+        <div class="card">
+            <h3>Transferências</h3>
+            <input type="text" placeholder="Descrição" id="transferDesc">
+            <input type="tel" placeholder="Valor" id="transferValor">
+            <select id="contaDe"></select>
+            <select id="contaPara"></select>
+            <button class="btn-primary" onclick="adicionarTransferencia()">Registrar Transferência</button>
         </div>
     </div>
 
@@ -193,6 +271,19 @@ canvas { max-height: 400px !important; width: 100% !important; }
         </div>
 
         <div class="card">
+            <h3>Limites de Gasto</h3>
+            <div id="limitesGasto"></div>
+            <button class="btn-secondary" onclick="abrirModalLimite()" style="margin-top: 10px;">Adicionar Limite</button>
+        </div>
+
+        <div class="card">
+            <h3>Importar/Exportar</h3>
+            <button class="btn-secondary" onclick="exportarCSV()" style="margin-bottom: 8px;">📥 Exportar CSV</button>
+            <button class="btn-secondary" onclick="document.getElementById('importCSV').click()">📤 Importar CSV</button>
+            <input type="file" id="importCSV" accept=".csv" style="display:none;" onchange="importarCSV(event)">
+        </div>
+
+        <div class="card">
             <h3>Reiniciar Dados</h3>
             <button class="btn-secondary" onclick="abrirModalReinicio()">Limpar Dados</button>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Escolha se deseja manter as contas ou excluir tudo.</p>
@@ -204,6 +295,8 @@ canvas { max-height: 400px !important; width: 100% !important; }
     <nav class="tabs">
         <div class="tab active" onclick="trocarAba('home',this)">Painel</div>
         <div class="tab" onclick="trocarAba('graficos',this)">Gráficos</div>
+        <div class="tab" onclick="trocarAba('relatorios',this)">Relatórios</div>
+        <div class="tab" onclick="trocarAba('contas',this)">Contas</div>
         <div class="tab" onclick="trocarAba('config',this)">Ajustes</div>
     </nav>
 </div>
@@ -228,7 +321,6 @@ canvas { max-height: 400px !important; width: 100% !important; }
                     <option value="todos">Todos da série</option>
                 </select>
             </div>
-            <div></div>
         </div>
         <div class="modal-buttons">
             <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
@@ -237,7 +329,7 @@ canvas { max-height: 400px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- MODAL DE CONFIRMAÇÃO DE PARCELAMENTO -->
+<!-- MODAL DE PARCELAMENTO -->
 <div id="modalParcelas" class="modal">
     <div class="modal-content">
         <h2>Confirmar Parcelamento</h2>
@@ -249,7 +341,20 @@ canvas { max-height: 400px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- MODAL DE REINICIO DE DADOS -->
+<!-- MODAL DE LIMITE DE GASTO -->
+<div id="modalLimite" class="modal">
+    <div class="modal-content">
+        <h2>Adicionar Limite de Gasto</h2>
+        <select id="limiteCategoria"></select>
+        <input id="limiteValor" type="tel" placeholder="Limite mensal (R$)">
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="fecharModalLimite()">Cancelar</button>
+            <button class="btn-primary" onclick="salvarLimite()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE REINICIO -->
 <div id="modalReinicio" class="modal">
     <div class="modal-content">
         <h2>Reiniciar Dados</h2>
@@ -268,15 +373,87 @@ const SUPABASE_URL = 'https://mjgxiqjsmfnmfkvtbdka.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_SJAXu2tYMNFAvG5KNj4E7w_DW-oae1f';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ===== ÍCONES DE CATEGORIAS =====
+const iconesCategoria = {
+    'Mercado': '🛒', 'Transporte': '🚗', 'Casa': '🏠', 'Lazer': '🎭',
+    'Saúde': '⚕️', 'Educação': '📚', 'Alimentação': '🍕', 'Telefone': '📱',
+    'Internet': '📡', 'Energia': '⚡', 'Água': '💧', 'Gás': '🔥',
+    'Seguros': '🛡️', 'Viagem': '✈️', 'Beleza': '💅', 'Roupas': '👕'
+};
+
 // ===== VARIÁVEIS GLOBAIS =====
 let transacoes = [];
+let transferencias = [];
 let nuvemMetas = {};
+let limites = JSON.parse(localStorage.getItem('limites')) || {};
 let contas = JSON.parse(localStorage.getItem('contas')) || [{nome:'Itaú', tipo:'Corrente'},{nome:'Nubank', tipo:'Crédito'}];
 let categorias = JSON.parse(localStorage.getItem('categorias')) || ['Mercado', 'Transporte', 'Casa', 'Lazer'];
 let userSession = null;
 let transacaoEmEdicao = null;
 let parcelamentoPendente = null;
 let charts = {};
+
+// ===== VERIFICAR RESET DE SENHA AO CARREGAR =====
+window.addEventListener('load', async () => {
+    const hash = window.location.hash;
+    if(hash.includes('type=recovery')) {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('reset-screen').classList.remove('hidden');
+    }
+});
+
+// ===== RESET DE SENHA =====
+async function confirmarResetSenha() {
+    const novaSenha = document.getElementById('novaSenha').value;
+    const confirmarSenha = document.getElementById('confirmarSenha').value;
+
+    if(!novaSenha || !confirmarSenha) {
+        showResetAlert('❌ Preencha todos os campos', 'error');
+        return;
+    }
+
+    if(novaSenha !== confirmarSenha) {
+        showResetAlert('❌ As senhas não conferem', 'error');
+        return;
+    }
+
+    if(novaSenha.length < 6) {
+        showResetAlert('❌ A senha deve ter no mínimo 6 caracteres', 'error');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.auth.updateUser({
+            password: novaSenha
+        });
+
+        if(error) {
+            showResetAlert('❌ Erro: ' + error.message, 'error');
+        } else {
+            showResetAlert('✅ Senha redefinida com sucesso! Você será redirecionado...', 'success');
+            setTimeout(() => {
+                window.location.href = window.location.origin + window.location.pathname;
+            }, 2000);
+        }
+    } catch(e) {
+        showResetAlert('❌ Erro: ' + e.message, 'error');
+    }
+}
+
+function showResetAlert(msg, type = 'success') {
+    const alertDiv = document.getElementById('reset-alert');
+    alertDiv.className = `alert-msg alert-${type}`;
+    alertDiv.innerText = msg;
+    alertDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        alertDiv.style.display = 'none';
+    }, 5000);
+}
+
+function voltarLogin() {
+    window.location.href = window.location.origin + window.location.pathname;
+}
 
 // ===== FUNÇÕES DE ALERT =====
 function showAlert(msg, type = 'success') {
@@ -304,11 +481,13 @@ async function handleAuth(type) {
 
     if(type === 'reset') {
         try {
-            const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + window.location.pathname + '#type=recovery'
+            });
             if(error) {
                 showAlert('❌ Erro: ' + error.message, 'error');
             } else {
-                showAlert('✅ Link de reset enviado para ' + email, 'success');
+                showAlert('✅ Link de reset enviado para ' + email + '. Verifique seu e-mail!', 'success');
             }
         } catch(e) {
             showAlert('❌ Erro ao enviar link: ' + e.message, 'error');
@@ -352,9 +531,7 @@ async function handleAuth(type) {
         if(error) {
             if(error.message.includes('Invalid login credentials')) {
                 showAlert('❌ E-mail ou senha incorretos', 'error');
-            } else if(error.message.includes('already registered')) {
-                showAlert('ℹ️ Este e-mail já está cadastrado! Use o botão "Acessar Conta" para entrar.', 'info');
-            } else if(error.message.includes('User already exists')) {
+            } else if(error.message.includes('already registered') || error.message.includes('User already exists')) {
                 showAlert('ℹ️ Este e-mail já está cadastrado! Use o botão "Acessar Conta" para entrar.', 'info');
             } else {
                 showAlert('❌ ' + error.message, 'error');
@@ -380,6 +557,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     userSession = session;
     if(session) {
         document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('reset-screen').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
         document.getElementById('btnPrivacy').style.display = 'block';
         carregarDados();
@@ -397,19 +575,16 @@ async function carregarDados() {
     }
 
     try {
-        const { data: tData, error: tError } = await supabaseClient
+        const { data: tData } = await supabaseClient
             .from('transacoes')
             .select('*')
             .eq('user_id', userSession.user.id)
             .order('data', {ascending: false});
 
-        const { data: mData, error: mError } = await supabaseClient
+        const { data: mData } = await supabaseClient
             .from('metas')
             .select('*')
             .eq('user_id', userSession.user.id);
-
-        if(tError) console.error('Erro ao carregar transações:', tError);
-        if(mError) console.error('Erro ao carregar metas:', mError);
 
         transacoes = tData || [];
         nuvemMetas = {};
@@ -418,6 +593,8 @@ async function carregarDados() {
         }
 
         atualizar();
+        atualizarSaldoContas();
+        atualizarRelatorios();
     } catch(e) {
         console.error('Erro ao carregar dados:', e);
     }
@@ -430,6 +607,11 @@ document.getElementById('tipoParcelamento').addEventListener('change', function(
     if(this.value === 'parcelado') {
         parcelas.style.display = 'block';
         tipoParcela.style.display = 'block';
+        parcelas.placeholder = 'Parcelas (2-12)';
+    } else if(this.value === 'recorrente') {
+        parcelas.style.display = 'block';
+        tipoParcela.style.display = 'none';
+        parcelas.placeholder = 'Repetir (meses)';
     } else {
         parcelas.value = '1';
         parcelas.style.display = 'none';
@@ -455,6 +637,14 @@ async function add() {
     if(tipo === 'parcelado' && (p < 2 || p > 12)) {
         alert('❌ Parcelas deve ser entre 2 e 12!');
         return;
+    }
+
+    // Verificar limite de gasto
+    if(tipo === 'fixo' && limites[cat]) {
+        const despesasCategoria = transacoes.filter(t => t.categoria === cat && t.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
+        if(despesasCategoria + v > limites[cat]) {
+            if(!confirm(`⚠️ Aviso: Você ultrapassa o limite de R$ ${format(limites[cat])} em ${cat}. Deseja continuar?`)) return;
+        }
     }
 
     // Mostrar confirmação de parcelamento
@@ -498,36 +688,63 @@ function fecharModalParcelas() {
 
 async function executarAdicao(v, d, desc, c, cat, p, tipo) {
     try {
-        const btn = document.querySelector('.btn-primary:nth-of-type(3)');
+        const btn = document.querySelector('button[onclick="add()"]');
         btn.disabled = true;
         btn.innerHTML = '<span class="loading"></span>';
 
         let inserts = [];
         let [ano, mes, dia] = d.split('-').map(Number);
-        let valorFinal = tipo === 'parcelado' ? v / p : v;
-
+        
         const serieId = Date.now() + '-' + Math.random();
 
-        for(let i=0; i<p; i++) {
-            let dataParc = new Date(ano, mes - 1 + i, dia);
+        if(tipo === 'recorrente') {
+            for(let i = 0; i < p; i++) {
+                let dataParc = new Date(ano, mes - 1 + i, dia);
+                inserts.push({
+                    user_id: userSession.user.id,
+                    tipo: document.getElementById('tipo').value,
+                    descricao: desc + ' (Recorrente)',
+                    valor: v,
+                    data: dataParc.toISOString().split('T')[0],
+                    conta: c,
+                    categoria: cat,
+                    recorrente: true,
+                    serie_id: serieId
+                });
+            }
+        } else if(tipo === 'parcelado') {
+            let valorFinal = v / p;
+            for(let i = 0; i < p; i++) {
+                let dataParc = new Date(ano, mes - 1 + i, dia);
+                inserts.push({
+                    user_id: userSession.user.id,
+                    tipo: document.getElementById('tipo').value,
+                    descricao: `${desc} ${i+1}/${p}`,
+                    valor: valorFinal,
+                    data: dataParc.toISOString().split('T')[0],
+                    conta: c,
+                    categoria: cat,
+                    serie_id: serieId,
+                    parcela_numero: i + 1,
+                    parcela_total: p
+                });
+            }
+        } else {
             inserts.push({
                 user_id: userSession.user.id,
                 tipo: document.getElementById('tipo').value,
-                descricao: p > 1 ? `${desc} ${i+1}/${p}` : desc,
-                valor: valorFinal,
-                data: dataParc.toISOString().split('T')[0],
+                descricao: desc,
+                valor: v,
+                data: d,
                 conta: c,
-                categoria: cat,
-                serie_id: p > 1 ? serieId : null,
-                parcela_numero: p > 1 ? i + 1 : null,
-                parcela_total: p > 1 ? p : null
+                categoria: cat
             });
         }
 
         const { error } = await supabaseClient.from('transacoes').insert(inserts);
         
         btn.disabled = false;
-        btn.innerText = 'Adicionar Lançamento';
+        btn.innerHTML = 'Adicionar Lançamento';
 
         if(error) {
             alert('❌ Erro ao salvar: ' + error.message);
@@ -541,8 +758,8 @@ async function executarAdicao(v, d, desc, c, cat, p, tipo) {
         }
     } catch(e) {
         alert('❌ Erro: ' + e.message);
-        document.querySelector('.btn-primary:nth-of-type(3)').disabled = false;
-        document.querySelector('.btn-primary:nth-of-type(3)').innerText = 'Adicionar Lançamento';
+        document.querySelector('button[onclick="add()"]').disabled = false;
+        document.querySelector('button[onclick="add()"]').innerHTML = 'Adicionar Lançamento';
     }
 }
 
@@ -585,7 +802,6 @@ function abrirEdicao(transacao) {
     document.getElementById('editConta').value = transacao.conta;
     document.getElementById('editCategoria').value = transacao.categoria;
     
-    // Mostrar informações de parcelamento
     if(transacao.parcela_total && transacao.parcela_total > 1) {
         document.getElementById('editParcelasInfo').innerHTML = `
             Parcela ${transacao.parcela_numero} de ${transacao.parcela_total}<br>
@@ -598,7 +814,6 @@ function abrirEdicao(transacao) {
     }
     
     renderConfigs();
-    
     document.getElementById('editModal').classList.add('show');
 }
 
@@ -625,42 +840,34 @@ async function salvarEdicao() {
 
         if(transacaoEmEdicao.parcela_total && transacaoEmEdicao.parcela_total > 1) {
             if(opcao === 'atual') {
-                // Apenas esta transação
                 const { error } = await supabaseClient
                     .from('transacoes')
                     .update(updateData)
                     .eq('id', transacaoEmEdicao.id);
-
                 if(error) throw error;
             } else if(opcao === 'futuros') {
-                // Esta e futuras
                 const { data: futuros } = await supabaseClient
                     .from('transacoes')
                     .select('id')
                     .eq('serie_id', transacaoEmEdicao.serie_id)
                     .gte('parcela_numero', transacaoEmEdicao.parcela_numero);
-
                 for(let t of futuros || []) {
                     await supabaseClient.from('transacoes').update(updateData).eq('id', t.id);
                 }
             } else if(opcao === 'todos') {
-                // Todas da série
                 const { data: todos } = await supabaseClient
                     .from('transacoes')
                     .select('id')
                     .eq('serie_id', transacaoEmEdicao.serie_id);
-
                 for(let t of todos || []) {
                     await supabaseClient.from('transacoes').update(updateData).eq('id', t.id);
                 }
             }
         } else {
-            // Transação sem parcelamento
             const { error } = await supabaseClient
                 .from('transacoes')
                 .update(updateData)
                 .eq('id', transacaoEmEdicao.id);
-
             if(error) throw error;
         }
 
@@ -693,47 +900,255 @@ async function deletarTransacao(id) {
     }
 }
 
-// ===== REINICIAR DADOS =====
-function abrirModalReinicio() {
-    document.getElementById('modalReinicio').classList.add('show');
+// ===== SALDO POR CONTA =====
+function atualizarSaldoContas() {
+    const saldoDiv = document.getElementById('saldoContas');
+    let html = '';
+
+    contas.forEach(conta => {
+        const receitas = transacoes.filter(t => t.conta === `${conta.nome} (${conta.tipo})` && t.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
+        const despesas = transacoes.filter(t => t.conta === `${conta.nome} (${conta.tipo})` && t.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
+        const saldo = receitas - despesas;
+
+        html += `<div class="conta-saldo">
+            <div>
+                <strong>${conta.nome}</strong><br>
+                <small style="color: var(--text-muted);">${conta.tipo}</small>
+            </div>
+            <div style="text-align: right;">
+                <span style="color: ${saldo >= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}; font-weight: bold;">
+                    ${format(saldo)}
+                </span>
+            </div>
+        </div>`;
+    });
+
+    saldoDiv.innerHTML = html;
+    renderConfigs();
 }
 
-function fecharModalReinicio() {
-    document.getElementById('modalReinicio').classList.remove('show');
-}
+// ===== TRANSFERÊNCIAS =====
+async function adicionarTransferencia() {
+    const desc = document.getElementById('transferDesc').value.trim();
+    const v = parseMoeda(document.getElementById('transferValor').value);
+    const de = document.getElementById('contaDe').value;
+    const para = document.getElementById('contaPara').value;
 
-async function executarReinicio(opcao) {
-    if(!confirm('Tem certeza? Esta ação não pode ser desfeita!')) return;
+    if(!desc || !v || !de || !para) {
+        alert('❌ Preencha todos os campos!');
+        return;
+    }
+
+    if(de === para) {
+        alert('❌ Selecione contas diferentes!');
+        return;
+    }
 
     try {
-        const { error: errorTransacoes } = await supabaseClient
-            .from('transacoes')
-            .delete()
-            .eq('user_id', userSession.user.id);
+        const { error } = await supabaseClient.from('transacoes').insert([
+            {
+                user_id: userSession.user.id,
+                tipo: 'despesa',
+                descricao: `Transferência: ${desc}`,
+                valor: v,
+                data: new Date().toISOString().split('T')[0],
+                conta: de,
+                categoria: 'Transferência',
+                tipo_transacao: 'transferencia_saida'
+            },
+            {
+                user_id: userSession.user.id,
+                tipo: 'receita',
+                descricao: `Transferência: ${desc}`,
+                valor: v,
+                data: new Date().toISOString().split('T')[0],
+                conta: para,
+                categoria: 'Transferência',
+                tipo_transacao: 'transferencia_entrada'
+            }
+        ]);
 
-        const { error: errorMetas } = await supabaseClient
-            .from('metas')
-            .delete()
-            .eq('user_id', userSession.user.id);
-
-        if(errorTransacoes || errorMetas) {
-            alert('❌ Erro ao limpar dados');
-            return;
+        if(error) {
+            alert('❌ Erro: ' + error.message);
+        } else {
+            alert('✅ Transferência registrada!');
+            document.getElementById('transferDesc').value = '';
+            document.getElementById('transferValor').value = '';
+            await carregarDados();
         }
-
-        if(opcao === 'excluir') {
-            localStorage.removeItem('contas');
-            localStorage.removeItem('categorias');
-            contas = [{nome:'Itaú', tipo:'Corrente'},{nome:'Nubank', tipo:'Crédito'}];
-            categorias = ['Mercado', 'Transporte', 'Casa', 'Lazer'];
-        }
-
-        alert('✅ Dados limpos com sucesso!');
-        fecharModalReinicio();
-        await carregarDados();
     } catch(e) {
         alert('❌ Erro: ' + e.message);
     }
+}
+
+// ===== LIMITES DE GASTO =====
+function abrirModalLimite() {
+    const select = document.getElementById('limiteCategoria');
+    select.innerHTML = '';
+    categorias.forEach(c => select.add(new Option(c, c)));
+    document.getElementById('modalLimite').classList.add('show');
+}
+
+function fecharModalLimite() {
+    document.getElementById('modalLimite').classList.remove('show');
+}
+
+function salvarLimite() {
+    const cat = document.getElementById('limiteCategoria').value;
+    const v = parseMoeda(document.getElementById('limiteValor').value);
+
+    if(!cat || !v) {
+        alert('❌ Preencha todos os campos!');
+        return;
+    }
+
+    limites[cat] = v;
+    localStorage.setItem('limites', JSON.stringify(limites));
+    atualizarLimites();
+    fecharModalLimite();
+    document.getElementById('limiteValor').value = '';
+    alert('✅ Limite salvo!');
+}
+
+function atualizarLimites() {
+    const div = document.getElementById('limitesGasto');
+    let html = '';
+
+    categorias.forEach(cat => {
+        if(limites[cat]) {
+            const gasto = transacoes.filter(t => t.categoria === cat && t.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
+            const porcento = (gasto / limites[cat] * 100).toFixed(0);
+            const cor = porcento > 100 ? 'var(--accent-red)' : porcento > 80 ? 'var(--accent-orange)' : 'var(--accent-green)';
+
+            html += `<div class="conta-saldo">
+                <div>
+                    <strong>${cat}</strong><br>
+                    <small>Gasto: ${format(gasto)} / ${format(limites[cat])}</small>
+                </div>
+                <div style="text-align: right;">
+                    <span style="color: ${cor}; font-weight: bold;">${porcento}%</span>
+                    <button class="btn-delete" style="width: 40px; height: 28px; margin-top: 5px;" onclick="deletarLimite('${cat}')">❌</button>
+                </div>
+            </div>`;
+        }
+    });
+
+    document.getElementById('limitesGasto').innerHTML = html;
+}
+
+function deletarLimite(cat) {
+    delete limites[cat];
+    localStorage.setItem('limites', JSON.stringify(limites));
+    atualizarLimites();
+}
+
+// ===== RELATÓRIOS =====
+function atualizarRelatorios() {
+    // Top Categorias
+    let porCategoria = {};
+    transacoes.filter(t => t.tipo === 'despesa').forEach(t => {
+        porCategoria[t.categoria] = (porCategoria[t.categoria] || 0) + t.valor;
+    });
+
+    const topCat = Object.entries(porCategoria)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+    let html = '';
+    topCat.forEach(([cat, valor]) => {
+        const icon = iconesCategoria[cat] || '💰';
+        html += `<div class="conta-saldo">
+            <div><span class="categoria-icon">${icon}</span> <strong>${cat}</strong></div>
+            <div style="color: var(--accent-red); font-weight: bold;">${format(valor)}</div>
+        </div>`;
+    });
+    document.getElementById('topCategorias').innerHTML = html || '<p style="color: var(--text-muted);">Sem dados</p>';
+
+    // Histórico de Metas
+    let htmlMetas = '';
+    Object.entries(nuvemMetas).forEach(([mes, meta]) => {
+        const dados = transacoes.filter(t => t.data.startsWith(mes));
+        const receita = dados.filter(t => t.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
+        const despesa = dados.filter(t => t.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
+        const realizado = receita - despesa;
+        const status = realizado >= meta ? '<span class="badge badge-green">✅ Atingida</span>' : '<span class="badge badge-red">❌ Não atingida</span>';
+
+        htmlMetas += `<tr>
+            <td>${new Date(mes).toLocaleDateString('pt-BR', {month: 'long', year: 'numeric'})}</td>
+            <td>${format(meta)}</td>
+            <td>${format(realizado)}</td>
+            <td>${status}</td>
+        </tr>`;
+    });
+    document.getElementById('tabelaMetas').innerHTML = htmlMetas || '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Sem metas registradas</td></tr>';
+
+    // Orçamentos
+    atualizarLimites();
+}
+
+// ===== EXPORT/IMPORT =====
+function exportarCSV() {
+    const dados = transacoes.map(t => ({
+        Data: t.data,
+        Descrição: t.descricao,
+        Tipo: t.tipo,
+        Valor: t.valor,
+        Conta: t.conta,
+        Categoria: t.categoria
+    }));
+
+    const csv = [
+        Object.keys(dados[0] || {}).join(','),
+        ...dados.map(r => Object.values(r).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `saldopro_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importarCSV(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const linhas = e.target.result.split('\n').slice(1);
+            const colunas = ['Data', 'Descrição', 'Tipo', 'Valor', 'Conta', 'Categoria'];
+            
+            let inserts = [];
+            for(let linha of linhas) {
+                if(!linha.trim()) continue;
+                
+                const valores = linha.split(',');
+                inserts.push({
+                    user_id: userSession.user.id,
+                    data: valores[0],
+                    descricao: valores[1],
+                    tipo: valores[2],
+                    valor: parseFloat(valores[3]),
+                    conta: valores[4],
+                    categoria: valores[5]
+                });
+            }
+
+            const { error } = await supabaseClient.from('transacoes').insert(inserts);
+            if(error) {
+                alert('❌ Erro ao importar: ' + error.message);
+            } else {
+                alert(`✅ ${inserts.length} transações importadas!`);
+                await carregarDados();
+            }
+        } catch(e) {
+            alert('❌ Erro ao processar arquivo: ' + e.message);
+        }
+    };
+    reader.readAsText(file);
 }
 
 // ===== ADICIONAR CONTA/CATEGORIA =====
@@ -752,6 +1167,7 @@ async function addConfig(tipo) {
     localStorage.setItem('contas', JSON.stringify(contas));
     localStorage.setItem('categorias', JSON.stringify(categorias));
     renderConfigs();
+    atualizarSaldoContas();
     atualizar();
 
     if(tipo === 'contas') document.getElementById('novaConta').value = '';
@@ -772,9 +1188,11 @@ function atualizar() {
         let ehR = t.tipo === 'receita';
         if(ehR) tR += t.valor; else tD += t.valor;
         const dataFormatada = new Date(t.data + 'T00:00:00').toLocaleDateString('pt-BR');
+        const icon = iconesCategoria[t.categoria] || '💰';
+        
         lista.innerHTML += `<div class="transacao ${ehR?'receitaItem':'despesaItem'}">
             <div style="flex:1;">
-                <span>${t.descricao}<br><small>${dataFormatada}</small></span>
+                <span><span class="categoria-icon">${icon}</span>${t.descricao}<br><small>${dataFormatada}</small></span>
             </div>
             <div style="text-align:right; margin-right: 10px;"><b class="dash-val">${format(t.valor)}</b></div>
             <div class="transacao-actions">
@@ -812,7 +1230,6 @@ function atualizar() {
         document.getElementById('metaAtual').innerText = '';
     }
 
-    // Atualizar status da meta
     const mesAtual = document.getElementById('mesInicio').value;
     if(mesAtual && nuvemMetas[mesAtual]) {
         const metaDiv = document.getElementById('metaStatus');
@@ -877,12 +1294,12 @@ function desenharGraficos() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {labels: {color: 'var(--text-main)', font: {size: 14, weight: 'bold'}, padding: 15}},
+                legend: {labels: {color: '#FFD700', font: {size: 14, weight: 'bold'}, padding: 15}},
                 tooltip: {
                     callbacks: {label: (c) => format(c.parsed.y)},
                     backgroundColor: 'rgba(0,0,0,0.9)',
-                    titleColor: 'var(--text-main)',
-                    bodyColor: 'var(--text-main)',
+                    titleColor: '#FFD700',
+                    bodyColor: '#FFD700',
                     padding: 12,
                     font: {size: 14, weight: 'bold'}
                 },
@@ -942,13 +1359,13 @@ function desenharGraficos() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    labels: {color: 'var(--text-main)', font: {size: 13, weight: 'bold'}, padding: 15}
+                    labels: {color: '#FFD700', font: {size: 13, weight: 'bold'}, padding: 15}
                 },
                 tooltip: {
                     callbacks: {label: (c) => format(c.parsed)},
                     backgroundColor: 'rgba(0,0,0,0.9)',
-                    titleColor: 'var(--text-main)',
-                    bodyColor: 'var(--text-main)',
+                    titleColor: '#FFD700',
+                    bodyColor: '#FFD700',
                     padding: 12,
                     font: {size: 14, weight: 'bold'}
                 },
@@ -958,6 +1375,153 @@ function desenharGraficos() {
                     formatter: (value) => value > 0 ? format(value) : '',
                     anchor: 'center',
                     align: 'center'
+                }
+            }
+        }
+    });
+
+    // Gráfico 3: Evolução Patrimonial
+    let evolucao = {};
+    let saldoAcumulado = 0;
+    dados.sort((a, b) => new Date(a.data) - new Date(b.data)).forEach(t => {
+        const mes = t.data.slice(0, 7);
+        if(t.tipo === 'receita') saldoAcumulado += t.valor;
+        else saldoAcumulado -= t.valor;
+        evolucao[mes] = saldoAcumulado;
+    });
+
+    const mesesEvolucao = Object.keys(evolucao).sort();
+    const valoresEvolucao = mesesEvolucao.map(m => evolucao[m]);
+
+    const ctx3 = document.getElementById('grafico3');
+    if(charts.line) charts.line.destroy();
+    
+    charts.line = new Chart(ctx3, {
+        type: 'line',
+        data: {
+            labels: mesesEvolucao.map(m => {
+                const [a, me] = m.split('-');
+                return new Date(a, me-1).toLocaleDateString('pt-BR', {month: 'short', year: '2-digit'});
+            }),
+            datasets: [{
+                label: 'Saldo Acumulado',
+                data: valoresEvolucao,
+                borderColor: 'var(--accent-orange)',
+                backgroundColor: 'rgba(255, 102, 0, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: 'var(--accent-orange)',
+                pointBorderColor: '#111111',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }]
+        },
+        plugins: [ChartDataLabels],
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {labels: {color: '#FFD700', font: {size: 14, weight: 'bold'}, padding: 15}},
+                tooltip: {
+                    callbacks: {label: (c) => format(c.parsed.y)},
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    titleColor: '#FFD700',
+                    bodyColor: '#FFD700',
+                    padding: 12,
+                    font: {size: 14, weight: 'bold'}
+                },
+                datalabels: {
+                    color: '#ffffff',
+                    font: {weight: 'bold', size: 12},
+                    formatter: (value) => format(value),
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 8
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        color: 'var(--text-muted)',
+                        callback: (value) => format(value),
+                        font: {size: 12, weight: 'bold'}
+                    },
+                    grid: {color: 'rgba(255,255,255,0.1)'}
+                },
+                x: {
+                    ticks: {color: 'var(--text-muted)', font: {size: 11, weight: 'bold'}},
+                    grid: {display: false}
+                }
+            }
+        }
+    });
+
+    // Gráfico 4: Comparativo Mês a Mês
+    const ultimosMeses = meses.slice(-12);
+    const comparativoReceitaBefore = ultimosMeses.map((m, i) => i > 0 ? porMes[ultimosMeses[i-1]]?.receita || 0 : 0);
+    const comparativaReceitaAfter = ultimosMeses.map(m => porMes[m]?.receita || 0);
+
+    const ctx4 = document.getElementById('grafico4');
+    if(charts.comparativo) charts.comparativo.destroy();
+    
+    charts.comparativo = new Chart(ctx4, {
+        type: 'bar',
+        data: {
+            labels: ultimosMeses.map(m => {
+                const [a, me] = m.split('-');
+                return new Date(a, me-1).toLocaleDateString('pt-BR', {month: 'short', year: '2-digit'});
+            }),
+            datasets: [{
+                label: 'Mês Anterior',
+                data: comparativoReceitaBefore,
+                backgroundColor: 'rgba(100, 100, 100, 0.6)',
+                borderColor: '#666',
+                borderWidth: 1
+            },
+            {
+                label: 'Mês Atual',
+                data: comparativaReceitaAfter,
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                borderColor: 'var(--accent-green)',
+                borderWidth: 2
+            }]
+        },
+        plugins: [ChartDataLabels],
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {labels: {color: '#FFD700', font: {size: 14, weight: 'bold'}, padding: 15}},
+                tooltip: {
+                    callbacks: {label: (c) => format(c.parsed.y)},
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    titleColor: '#FFD700',
+                    bodyColor: '#FFD700',
+                    padding: 12,
+                    font: {size: 14, weight: 'bold'}
+                },
+                datalabels: {
+                    color: '#ffffff',
+                    font: {weight: 'bold', size: 12},
+                    formatter: (value) => value > 0 ? format(value) : '',
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 6
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: 'var(--text-muted)',
+                        callback: (value) => format(value),
+                        font: {size: 12, weight: 'bold'}
+                    },
+                    grid: {color: 'rgba(255,255,255,0.1)'}
+                },
+                x: {
+                    ticks: {color: 'var(--text-muted)', font: {size: 11, weight: 'bold'}},
+                    grid: {display: false}
                 }
             }
         }
@@ -979,6 +1543,10 @@ function trocarAba(aba, el) {
 
     if(aba === 'graficos') {
         setTimeout(() => desenharGraficos(), 100);
+    } else if(aba === 'relatorios') {
+        atualizarRelatorios();
+    } else if(aba === 'contas') {
+        atualizarSaldoContas();
     }
 }
 
@@ -986,22 +1554,26 @@ function trocarAba(aba, el) {
 function renderConfigs() {
     const sc = document.getElementById('conta'), scat = document.getElementById('categoria');
     const esc = document.getElementById('editConta'), escat = document.getElementById('editCategoria');
+    const cde = document.getElementById('contaDe'), cpa = document.getElementById('contaPara');
     
     sc.innerHTML = ''; scat.innerHTML = '';
     if(esc) esc.innerHTML = '';
     if(escat) escat.innerHTML = '';
+    if(cde) cde.innerHTML = '';
+    if(cpa) cpa.innerHTML = '';
     
     contas.forEach(c => {
         const opt = `${c.nome} (${c.tipo})`;
         sc.add(new Option(opt, opt));
         if(esc) esc.add(new Option(opt, opt));
+        if(cde) cde.add(new Option(opt, opt));
+        if(cpa) cpa.add(new Option(opt, opt));
     });
     categorias.forEach(c => {
         scat.add(new Option(c, c));
         if(escat) escat.add(new Option(c, c));
     });
 
-    // Renderizar lista de contas
     const listContas = document.getElementById('listaAdminContas');
     listContas.innerHTML = contas.map((c, i) => 
         `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
@@ -1010,11 +1582,10 @@ function renderConfigs() {
         </div>`
     ).join('');
 
-    // Renderizar lista de categorias
     const listCat = document.getElementById('listaAdminCategorias');
     listCat.innerHTML = categorias.map((c, i) => 
         `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
-            <span>${c}</span>
+            <span>${iconesCategoria[c] || '💰'} ${c}</span>
             <button class="btn-delete" style="width:60px; height:32px;" onclick="removerCategoria(${i})">❌</button>
         </div>`
     ).join('');
@@ -1025,12 +1596,56 @@ function removerConta(index) {
     localStorage.setItem('contas', JSON.stringify(contas));
     renderConfigs();
     atualizar();
+    atualizarSaldoContas();
 }
 
 function removerCategoria(index) {
     categorias.splice(index, 1);
     localStorage.setItem('categorias', JSON.stringify(categorias));
     renderConfigs();
+}
+
+// ===== REINICIAR DADOS =====
+function abrirModalReinicio() {
+    document.getElementById('modalReinicio').classList.add('show');
+}
+
+function fecharModalReinicio() {
+    document.getElementById('modalReinicio').classList.remove('show');
+}
+
+async function executarReinicio(opcao) {
+    if(!confirm('Tem certeza? Esta ação não pode ser desfeita!')) return;
+
+    try {
+        const { error: errorTransacoes } = await supabaseClient
+            .from('transacoes')
+            .delete()
+            .eq('user_id', userSession.user.id);
+
+        const { error: errorMetas } = await supabaseClient
+            .from('metas')
+            .delete()
+            .eq('user_id', userSession.user.id);
+
+        if(errorTransacoes || errorMetas) {
+            alert('❌ Erro ao limpar dados');
+            return;
+        }
+
+        if(opcao === 'excluir') {
+            localStorage.removeItem('contas');
+            localStorage.removeItem('categorias');
+            contas = [{nome:'Itaú', tipo:'Corrente'},{nome:'Nubank', tipo:'Crédito'}];
+            categorias = ['Mercado', 'Transporte', 'Casa', 'Lazer'];
+        }
+
+        alert('✅ Dados limpos com sucesso!');
+        fecharModalReinicio();
+        await carregarDados();
+    } catch(e) {
+        alert('❌ Erro: ' + e.message);
+    }
 }
 
 // ===== FUNÇÕES AUXILIARES =====
@@ -1066,6 +1681,16 @@ document.getElementById('metaValor').oninput = e => {
     e.target.value = (v/100).toFixed(2).replace('.', ',');
 };
 
+document.getElementById('transferValor').oninput = e => {
+    let v = e.target.value.replace(/\D/g, '');
+    e.target.value = (v/100).toFixed(2).replace('.', ',');
+};
+
+document.getElementById('limiteValor').oninput = e => {
+    let v = e.target.value.replace(/\D/g, '');
+    e.target.value = (v/100).toFixed(2).replace('.', ',');
+};
+
 if(document.getElementById('editValor')) {
     document.getElementById('editValor').oninput = e => {
         let v = e.target.value.replace(/\D/g, '');
@@ -1073,23 +1698,17 @@ if(document.getElementById('editValor')) {
     };
 }
 
-// Definir data atual como padrão
 document.getElementById('data').valueAsDate = new Date();
 
-// Fechar modal ao clicar fora
 window.onclick = (e) => {
     const modal = document.getElementById('editModal');
     const modalP = document.getElementById('modalParcelas');
+    const modalL = document.getElementById('modalLimite');
     const modalR = document.getElementById('modalReinicio');
-    if(e.target === modal) {
-        fecharModal();
-    }
-    if(e.target === modalP) {
-        fecharModalParcelas();
-    }
-    if(e.target === modalR) {
-        fecharModalReinicio();
-    }
+    if(e.target === modal) fecharModal();
+    if(e.target === modalP) fecharModalParcelas();
+    if(e.target === modalL) fecharModalLimite();
+    if(e.target === modalR) fecharModalReinicio();
 };
 </script>
 </body>
