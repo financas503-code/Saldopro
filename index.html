@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Saldo + Pró - Finança Descomplicada</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+  --bg-color: #000000;
+  --card-bg: #111111;
+  --border-color: #222222;
+  --text-main: #ffffff;
+  --text-muted: #aaaaaa;
+  --accent-orange: #FF6600;
+  --accent-green: #10b981;
+  --accent-red: #f43f5e;
+  --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg-color); color: var(--text-main); padding: 10px; padding-bottom: 100px; }
+.container { max-width: 600px; margin: auto; }
+
+/* LOGIN SCREEN */
+#auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; max-width: 450px; margin: auto; }
+.login-title { color: var(--accent-orange); font-size: 2.5rem; font-weight: bold; margin-bottom: 30px; letter-spacing: 3px; text-transform: uppercase; }
+.login-card { background: var(--card-bg); width: 100%; padding: 30px; border-radius: 20px; border: 1px solid var(--border-color); }
+.login-card h2 { margin-bottom: 20px; font-weight: bold; font-size: 1.5rem; }
+.grid-login { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+input, select { width: 100%; height: 48px; padding: 0 12px; margin-bottom: 8px; border-radius: 12px; border: 1px solid var(--border-color); background: #1a1a1a; color: #fff; font-size: 16px; outline: none; }
+button { height: 48px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+button:active { opacity: 0.7; }
+
+.btn-primary { background: var(--accent-orange); color: #000; width: 100%; }
+.btn-secondary { background: #222; color: #fff; width: 100%; }
+.btn-danger { background: var(--accent-red); color: white; width: 100%; }
+
+/* HEADER & APP */
+.header { text-align: center; padding: 20px 0; border-bottom: 1px solid var(--border-color); position: relative; margin-bottom: 15px; }
+h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; letter-spacing: 3px; }
+.btn-privacy { position: absolute; right: 10px; top: 25px; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+.blur-active { filter: blur(8px); }
+.hidden { display: none !important; }
+
+.card { background: var(--card-bg); padding: 18px; border-radius: 20px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+.dash-item { padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.dash-val { font-size: 1.1rem; font-weight: bold; }
+
+.tabs { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: #080808; border-top: 1px solid var(--border-color); padding-bottom: var(--safe-area-bottom); z-index: 1000; }
+.tab { flex: 1; text-align: center; padding: 15px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); }
+.tab.active { color: var(--accent-orange); border-top: 2px solid var(--accent-orange); }
+
+.transacao { padding: 15px; margin: 8px 0; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; background: #080808; border: 1px solid #1a1a1a; }
+.receitaItem { border-left: 4px solid var(--accent-green); }
+.despesaItem { border-left: 4px solid var(--accent-red); }
+
+/* LOADING & ALERTS */
+.loading { display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc; border-top: 2px solid var(--accent-orange); border-radius: 50%; animation: spin 0.6s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.alert-msg { padding: 12px; margin-bottom: 10px; border-radius: 8px; text-align: center; font-weight: bold; }
+.alert-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+.alert-error { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
+</style>
+</head>
+
+<body>
+
+<div id="auth-screen">
+    <div class="login-title">SALDO + PRÓ</div>
+    <div class="login-card">
+        <h2>Entrar</h2>
+        <div id="auth-alert"></div>
+        <input type="email" id="auth-email" placeholder="E-mail">
+        <input type="password" id="auth-password" placeholder="Senha">
+        <button class="btn-primary" onclick="handleAuth('login')" id="btn-login">Acessar Conta</button>
+        <div class="grid-login">
+            <button class="btn-secondary" onclick="handleAuth('signup')" id="btn-signup">Criar Conta</button>
+            <button class="btn-secondary" onclick="handleAuth('reset')" id="btn-reset">Esqueci Senha</button>
+        </div>
+    </div>
+</div>
+
+<div id="main-app" class="container hidden">
+    <div class="header">
+        <h1>Saldo + Pró</h1>
+        <button class="btn-privacy" onclick="togglePrivacidade()" id="btnPrivacy">👁️</button>
+    </div>
+
+    <div id="home" class="page">
+        <div class="card">
+            <h3>Filtro & Meta</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input type="month" id="mesInicio" onchange="atualizar()">
+                <input type="month" id="mesFim" onchange="atualizar()">
+            </div>
+            <input id="metaValor" type="tel" placeholder="Meta de sobra (R$)">
+            <button class="btn-primary" onclick="salvarMeta()">Salvar Meta</button>
+        </div>
+
+        <div class="card">
+            <div class="dash-item"><span>Entradas</span><span id="resumoReceitas" class="dash-val" style="color: var(--accent-green)">R$ 0,00</span></div>
+            <div class="dash-item"><span>Saídas</span><span id="resumoDespesas" class="dash-val" style="color: var(--accent-red)">R$ 0,00</span></div>
+            <div class="dash-item"><span>Saldo</span><span id="resumoSaldo" class="dash-val" style="color: var(--accent-orange)">R$ 0,00</span></div>
+            <div id="metaStatus" style="text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;"></div>
+        </div>
+
+        <div class="card">
+            <h3>Lançamento</h3>
+            <select id="tipo"><option value="receita">Receita</option><option value="despesa" selected>Despesa</option></select>
+            <input id="descricao" placeholder="Descrição">
+            <input id="valor" type="tel" placeholder="R$ 0,00">
+            <input id="data" type="date">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <select id="conta"></select>
+                <select id="categoria"></select>
+            </div>
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px;">
+                <input id="parcelas" type="number" value="1" min="1">
+                <select id="tipoParcela"><option value="total">Valor Total</option><option value="mensal">Valor Mensal</option></select>
+            </div>
+            <button class="btn-primary" onclick="add()">Registrar na Nuvem</button>
+        </div>
+        <div id="listaLancamentos"></div>
+    </div>
+
+    <div id="graficos" class="page hidden">
+        <div class="card"><h3>Distribuição de Despesas</h3><canvas id="grafico2"></canvas></div>
+        <div class="card"><h3>Balanço Mensal</h3><canvas id="grafico1"></canvas></div>
+    </div>
+
+    <div id="config" class="page hidden">
+        <div class="card">
+            <h3>Contas</h3>
+            <div style="display:flex; gap:5px; margin-bottom: 8px;">
+                <input id="novaConta" placeholder="Banco" style="flex:1;">
+                <select id="tipoConta" style="flex:1;"><option>Corrente</option><option>Crédito</option></select>
+            </div>
+            <button class="btn-primary" onclick="addConfig('contas')">Adicionar Conta</button>
+            <div id="listaAdminContas" style="margin-top:10px"></div>
+        </div>
+        
+        <div class="card">
+            <h3>Categorias</h3>
+            <div style="display:flex; gap:5px; margin-bottom: 8px;">
+                <input id="novaCategoria" placeholder="Nova categoria" style="flex:1;">
+            </div>
+            <button class="btn-primary" onclick="addConfig('categorias')">Adicionar Categoria</button>
+            <div id="listaAdminCategorias" style="margin-top:10px"></div>
+        </div>
+
+        <button class="btn-danger" onclick="handleLogout()" style="margin-top: 20px;">Sair da Conta</button>
+    </div>
+
+    <nav class="tabs">
+        <div class="tab active" onclick="trocarAba('home',this)">Painel</div>
+        <div class="tab" onclick="trocarAba('graficos',this)">Gráficos</div>
+        <div class="tab" onclick="trocarAba('config',this)">Ajustes</div>
+    </nav>
+</div>
+
+<script>
+// ===== CONFIGURAÇÃO SUPABASE =====
+const SUPABASE_URL = 'https://mjgxiqjsmfnmfkvtbdka.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qZ3hpcWpzbWZubWZrdnRiZGthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg5NDUwOTgsImV4cCI6MTc1NDUyMTA5OH0.sb_publishable_TXXYSENr8Sx1WMi1FVi4EA_8JppL9wN';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== VARIÁVEIS GLOBAIS =====
+let transacoes = [];
+let nuvemMetas = {};
+let contas = JSON.parse(localStorage.getItem('contas')) || [{nome:'Itaú', tipo:'Corrente'},{nome:'Nubank', tipo:'Crédito'}];
+let categorias = JSON.parse(localStorage.getItem('categorias')) || ['Mercado', 'Transporte', 'Casa', 'Lazer'];
+let userSession = null;
+let chartsInitialized = false;
+
+// ===== FUNÇÕES DE ALERT =====
+function showAlert(msg, type = 'success') {
+    const alertDiv = document.getElementById('auth-alert') || document.createElement('div');
+    alertDiv.id = 'auth-alert';
+    alertDiv.className = `alert-msg alert-${type}`;
+    alertDiv.innerText = msg;
+    
+    if(!document.getElementById('auth-alert')) {
+        document.querySelector('.login-card').insertBefore(alertDiv, document.querySelector('.login-card h2').nextElementSibling);
+    }
+    
+    setTimeout(() => alertDiv.remove(), 4000);
+}
+
+// ===== AUTENTICAÇÃO =====
+async function handleAuth(type) {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+
+    if(!email) {
+        showAlert('❌ Digite o e-mail', 'error');
+        return;
+    }
+
+    if(type === 'reset') {
+        try {
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+            if(error) {
+                showAlert('❌ Erro: ' + error.message, 'error');
+            } else {
+                showAlert('✅ Link de reset enviado para ' + email, 'success');
+            }
+        } catch(e) {
+            showAlert('❌ Erro ao enviar link: ' + e.message, 'error');
+        }
+        return;
+    }
+
+    if(!password) {
+        showAlert('❌ Digite a senha', 'error');
+        return;
+    }
+
+    try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading"></span>';
+
+        const { data, error } = (type === 'login') 
+            ? await supabaseClient.auth.signInWithPassword({email, password})
+            : await supabaseClient.auth.signUp({email, password});
+
+        btn.disabled = false;
+        btn.innerText = type === 'login' ? 'Acessar Conta' : 'Criar Conta';
+        
+        if(error) {
+            showAlert('❌ ' + error.message, 'error');
+        } else if(type === 'signup') {
+            showAlert('✅ Conta criada! Verifique seu e-mail', 'success');
+        }
+    } catch(e) {
+        showAlert('❌ Erro: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.innerText = type === 'login' ? 'Acessar Conta' : 'Criar Conta';
+    }
+}
+
+async function handleLogout() {
+    if(!confirm('Tem certeza que deseja sair?')) return;
+    await supabaseClient.auth.signOut();
+    window.location.reload();
+}
+
+// ===== OBSERVADOR DE AUTENTICAÇÃO =====
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    userSession = session;
+    if(session) {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        carregarDados();
+    } else {
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('main-app').classList.add('hidden');
+    }
+});
+
+// ===== CARREGAMENTO DE DADOS =====
+async function carregarDados() {
+    if(!userSession) {
+        console.error('Sem sessão de usuário');
+        return;
+    }
+
+    try {
+        const { data: tData, error: tError } = await supabaseClient
+            .from('transacoes')
+            .select('*')
+            .eq('user_id', userSession.user.id)
+            .order('data', {ascending: false});
+
+        const { data: mData, error: mError } = await supabaseClient
+            .from('metas')
+            .select('*')
+            .eq('user_id', userSession.user.id);
+
+        if(tError) console.error('Erro ao carregar transações:', tError);
+        if(mError) console.error('Erro ao carregar metas:', mError);
+
+        transacoes = tData || [];
+        nuvemMetas = {};
+        if(mData) {
+            mData.forEach(m => nuvemMetas[m.mes] = m.valor);
+        }
+
+        atualizar();
+    } catch(e) {
+        console.error('Erro ao carregar dados:', e);
+    }
+}
+
+// ===== ADICIONAR TRANSAÇÃO =====
+async function add() {
+    const v = parseMoeda(document.getElementById('valor').value);
+    const d = document.getElementById('data').value;
+    const desc = document.getElementById('descricao').value.trim();
+    const c = document.getElementById('conta').value;
+    const cat = document.getElementById('categoria').value;
+    const p = parseInt(document.getElementById('parcelas').value) || 1;
+
+    if(!v || !d || !desc || !c || !cat) {
+        alert('❌ Atenção: Preencha todos os campos!');
+        return;
+    }
+
+    try {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading"></span>';
+
+        let inserts = [];
+        let [ano, mes, dia] = d.split('-').map(Number);
+        let valorFinal = document.getElementById('tipoParcela').value === 'total' ? v/p : v;
+
+        for(let i=0; i<p; i++) {
+            let dataParc = new Date(ano, mes - 1 + i, dia);
+            inserts.push({
+                user_id: userSession.user.id,
+                tipo: document.getElementById('tipo').value,
+                descricao: desc + (p > 1 ? ` ${i+1}/${p}` : ''),
+                valor: valorFinal,
+                data: dataParc.toISOString().split('T')[0],
+                conta: c,
+                categoria: cat
+            });
+        }
+
+        const { error } = await supabaseClient.from('transacoes').insert(inserts);
+        
+        btn.disabled = false;
+        btn.innerText = 'Registrar na Nuvem';
+
+        if(error) {
+            alert('❌ Erro ao salvar: ' + error.message);
+        } else {
+            document.getElementById('descricao').value = '';
+            document.getElementById('valor').value = '';
+            document.getElementById('parcelas').value = '1';
+            alert('✅ Transação(ões) salva(s) com sucesso!');
+            await carregarDados();
+        }
+    } catch(e) {
+        alert('❌ Erro: ' + e.message);
+        btn.disabled = false;
+        btn.innerText = 'Registrar na Nuvem';
+    }
+}
+
+// ===== SALVAR META =====
+async function salvarMeta() {
+    const mes = document.getElementById('mesInicio').value;
+    const v = parseMoeda(document.getElementById('metaValor').value);
+
+    if(!mes || !v) {
+        alert('❌ Selecione o mês e o valor!');
+        return;
+    }
+
+    try {
+        const { error } = await supabaseClient.from('metas').upsert({
+            user_id: userSession.user.id,
+            mes: mes,
+            valor: v
+        }, {onConflict: 'user_id,mes'});
+
+        if(error) {
+            alert('❌ Erro ao salvar meta: ' + error.message);
+        } else {
+            alert('✅ Meta salva!');
+            document.getElementById('metaValor').value = '';
+            await carregarDados();
+        }
+    } catch(e) {
+        alert('❌ Erro: ' + e.message);
+    }
+}
+
+// ===== ADICIONAR CONTA/CATEGORIA =====
+async function addConfig(tipo) {
+    if(tipo === 'contas') {
+        const nome = document.getElementById('novaConta').value.trim();
+        const tipoC = document.getElementById('tipoConta').value;
+        if(!nome) return alert('❌ Digite o nome do banco');
+        contas.push({nome, tipo: tipoC});
+    } else if(tipo === 'categorias') {
+        const nome = document.getElementById('novaCategoria').value.trim();
+        if(!nome) return alert('❌ Digite a categoria');
+        categorias.push(nome);
+    }
+
+    localStorage.setItem('contas', JSON.stringify(contas));
+    localStorage.setItem('categorias', JSON.stringify(categorias));
+    renderConfigs();
+    atualizar();
+
+    if(tipo === 'contas') document.getElementById('novaConta').value = '';
+    else document.getElementById('novaCategoria').value = '';
+    
+    alert('✅ ' + (tipo === 'contas' ? 'Conta' : 'Categoria') + ' adicionada!');
+}
+
+// ===== ATUALIZAR INTERFACE =====
+function atualizar() {
+    renderConfigs();
+    const dados = filtrar(transacoes);
+    const lista = document.getElementById('listaLancamentos');
+    lista.innerHTML = '';
+    let tR = 0, tD = 0;
+
+    dados.forEach(t => {
+        let ehR = t.tipo === 'receita';
+        if(ehR) tR += t.valor; else tD += t.valor;
+        const dataFormatada = new Date(t.data + 'T00:00:00').toLocaleDateString('pt-BR');
+        lista.innerHTML += `<div class="transacao ${ehR?'receitaItem':'despesaItem'}">
+            <span>${t.descricao}<br><small>${dataFormatada}</small></span>
+            <div style="text-align:right"><b class="dash-val">${format(t.valor)}</b></div>
+        </div>`;
+    });
+
+    document.getElementById('resumoReceitas').innerText = format(tR);
+    document.getElementById('resumoDespesas').innerText = format(tD);
+    const saldo = tR - tD;
+    document.getElementById('resumoSaldo').innerText = format(saldo);
+
+    // Atualizar meta
+    const mesAtual = document.getElementById('mesInicio').value;
+    if(mesAtual && nuvemMetas[mesAtual]) {
+        const metaDiv = document.getElementById('metaStatus');
+        const meta = nuvemMetas[mesAtual];
+        const status = saldo >= meta ? '✅ Meta atingida!' : `❌ Faltam ${format(meta - saldo)}`;
+        metaDiv.innerText = status;
+    }
+
+    // Desenhar gráficos se estiver na aba
+    if(!document.getElementById('graficos').classList.contains('hidden') && !chartsInitialized) {
+        desenharGraficos();
+        chartsInitialized = true;
+    }
+}
+
+// ===== GRÁFICOS =====
+function desenharGraficos() {
+    const dados = filtrar(transacoes);
+    
+    // Gráfico 1: Balanço Mensal
+    let porMes = {};
+    dados.forEach(t => {
+        const mes = t.data.slice(0, 7);
+        if(!porMes[mes]) porMes[mes] = {receita: 0, despesa: 0};
+        if(t.tipo === 'receita') porMes[mes].receita += t.valor;
+        else porMes[mes].despesa += t.valor;
+    });
+
+    const meses = Object.keys(porMes).sort();
+    const receitas = meses.map(m => porMes[m].receita);
+    const despesas = meses.map(m => porMes[m].despesa);
+
+    const ctx1 = document.getElementById('grafico1');
+    if(ctx1.chart) ctx1.chart.destroy();
+    ctx1.chart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: meses.map(m => {
+                const [a, me] = m.split('-');
+                return new Date(a, me-1).toLocaleDateString('pt-BR', {month: 'short', year: '2-digit'});
+            }),
+            datasets: [
+                {
+                    label: 'Receitas',
+                    data: receitas,
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    borderColor: 'var(--accent-green)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Despesas',
+                    data: despesas,
+                    backgroundColor: 'rgba(244, 63, 94, 0.5)',
+                    borderColor: 'var(--accent-red)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {legend: {labels: {color: 'var(--text-main)'}}, tooltip: {callbacks: {label: (c) => format(c.parsed.y)}}},
+            scales: {y: {beginAtZero: true, ticks: {color: 'var(--text-muted)'}}}
+        }
+    });
+
+    // Gráfico 2: Distribuição por Categoria
+    let porCategoria = {};
+    dados.forEach(t => {
+        if(t.tipo === 'despesa') {
+            porCategoria[t.categoria] = (porCategoria[t.categoria] || 0) + t.valor;
+        }
+    });
+
+    const cores = ['#FF6600', '#f43f5e', '#10b981', '#3b82f6', '#a78bfa', '#f97316'];
+    const ctx2 = document.getElementById('grafico2');
+    if(ctx2.chart) ctx2.chart.destroy();
+    ctx2.chart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(porCategoria),
+            datasets: [{
+                data: Object.values(porCategoria),
+                backgroundColor: cores.slice(0, Object.keys(porCategoria).length)
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {labels: {color: 'var(--text-main)'}},
+                tooltip: {callbacks: {label: (c) => format(c.parsed)}}
+            }
+        }
+    });
+}
+
+// ===== TROCAR ABA =====
+function trocarAba(aba, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById(aba).classList.remove('hidden');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+
+    chartsInitialized = false; // Resetar para redraw
+    if(aba === 'graficos') {
+        setTimeout(() => desenharGraficos(), 100);
+    }
+}
+
+// ===== RENDERIZAR CONFIGS =====
+function renderConfigs() {
+    const sc = document.getElementById('conta'), scat = document.getElementById('categoria');
+    sc.innerHTML = ''; scat.innerHTML = '';
+    contas.forEach(c => sc.add(new Option(c.nome, c.nome)));
+    categorias.forEach(c => scat.add(new Option(c, c)));
+
+    // Renderizar lista de contas
+    const listContas = document.getElementById('listaAdminContas');
+    listContas.innerHTML = contas.map((c, i) => 
+        `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
+            <span>${c.nome} (${c.tipo})</span>
+            <button class="btn-secondary" style="width:60px; height:32px;" onclick="removerConta(${i})">❌</button>
+        </div>`
+    ).join('');
+
+    // Renderizar lista de categorias
+    const listCat = document.getElementById('listaAdminCategorias');
+    listCat.innerHTML = categorias.map((c, i) => 
+        `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
+            <span>${c}</span>
+            <button class="btn-secondary" style="width:60px; height:32px;" onclick="removerCategoria(${i})">❌</button>
+        </div>`
+    ).join('');
+}
+
+function removerConta(index) {
+    contas.splice(index, 1);
+    localStorage.setItem('contas', JSON.stringify(contas));
+    renderConfigs();
+}
+
+function removerCategoria(index) {
+    categorias.splice(index, 1);
+    localStorage.setItem('categorias', JSON.stringify(categorias));
+    renderConfigs();
+}
+
+// ===== FUNÇÕES AUXILIARES =====
+function format(v) {
+    return Number(v).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+}
+
+function parseMoeda(v) {
+    return Number(v.replace(/\D/g, ''))/100;
+}
+
+function filtrar(arr) {
+    const s = document.getElementById('mesInicio').value;
+    const e = document.getElementById('mesFim').value;
+    return arr.filter(t => {
+        let d = t.data.slice(0, 7);
+        return (!s || d >= s) && (!e || d <= e);
+    });
+}
+
+function togglePrivacidade() {
+    document.querySelectorAll('.dash-val').forEach(v => v.classList.toggle('blur-active'));
+}
+
+// ===== FORMATAÇÃO DE INPUT =====
+document.getElementById('valor').oninput = e => {
+    let v = e.target.value.replace(/\D/g, '');
+    e.target.value = (v/100).toFixed(2).replace('.', ',');
+};
+
+document.getElementById('metaValor').oninput = e => {
+    let v = e.target.value.replace(/\D/g, '');
+    e.target.value = (v/100).toFixed(2).replace('.', ',');
+};
+
+// Definir data atual como padrão
+document.getElementById('data').valueAsDate = new Date();
+</script>
+</body>
+</html>
