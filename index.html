@@ -6,8 +6,8 @@
 <title>Saldo + Pró - Finança Descomplicada</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
 <style>
 :root {
@@ -73,10 +73,11 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .alert-error { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
 
 /* GRÁFICOS */
-canvas { max-height: 300px; }
+.graficos-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
+canvas { max-height: 400px !important; width: 100% !important; }
 
 /* MODAL */
-.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+.modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); overflow-y: auto; }
 .modal.show { display: flex; align-items: center; justify-content: center; }
 .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; max-width: 500px; width: 90%; border: 1px solid var(--border-color); }
 .modal-content h2 { color: var(--accent-orange); margin-bottom: 15px; }
@@ -136,10 +137,14 @@ canvas { max-height: 300px; }
                 <select id="conta"></select>
                 <select id="categoria"></select>
             </div>
-            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px;">
-                <input id="parcelas" type="number" value="1" min="1">
-                <select id="tipoParcela"><option value="total">Valor Total</option><option value="mensal">Valor Mensal</option></select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <select id="tipoParcelamento">
+                    <option value="fixo">Compra Fixa</option>
+                    <option value="parcelado">Parcelado</option>
+                </select>
+                <input id="parcelas" type="number" value="1" min="1" max="12" placeholder="Parcelas (até 12)">
             </div>
+            <select id="tipoParcela" style="display:none;"><option value="total">Valor Total</option><option value="mensal">Valor Mensal</option></select>
             <button class="btn-primary" onclick="add()">Adicionar Lançamento</button>
         </div>
         <div id="listaLancamentos"></div>
@@ -153,8 +158,10 @@ canvas { max-height: 300px; }
                 <input type="month" id="mesFimGraf" onchange="desenharGraficos()">
             </div>
         </div>
-        <div class="card"><h3>Distribuição de Despesas</h3><canvas id="grafico2"></canvas></div>
-        <div class="card"><h3>Balanço Mensal</h3><canvas id="grafico1"></canvas></div>
+        <div class="graficos-container">
+            <div class="card"><h3>Distribuição de Despesas</h3><div style="position: relative; height: 350px;"><canvas id="grafico2"></canvas></div></div>
+            <div class="card"><h3>Balanço Mensal</h3><div style="position: relative; height: 350px;"><canvas id="grafico1"></canvas></div></div>
+        </div>
     </div>
 
     <div id="config" class="page hidden">
@@ -204,9 +211,33 @@ canvas { max-height: 300px; }
         <input id="editData" type="date">
         <select id="editConta"></select>
         <select id="editCategoria"></select>
+        <div id="editParcelasInfo" style="padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted);"></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+            <div>
+                <label style="font-size: 0.8rem; color: var(--text-muted);">Aplicar a:</label>
+                <select id="editOpcaoParcela">
+                    <option value="atual">Apenas este</option>
+                    <option value="futuros">Este e futuros</option>
+                    <option value="todos">Todos da série</option>
+                </select>
+            </div>
+            <div></div>
+        </div>
         <div class="modal-buttons">
             <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
             <button class="btn-primary" onclick="salvarEdicao()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE CONFIRMAÇÃO DE PARCELAMENTO -->
+<div id="modalParcelas" class="modal">
+    <div class="modal-content">
+        <h2>Confirmar Parcelamento</h2>
+        <div id="parcelasInfo" style="padding: 15px; background: rgba(255,165,0,0.1); border-radius: 8px; border-left: 4px solid var(--accent-orange);"></div>
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="fecharModalParcelas()">Cancelar</button>
+            <button class="btn-primary" onclick="confirmarParcelamento()">Confirmar</button>
         </div>
     </div>
 </div>
@@ -223,8 +254,9 @@ let nuvemMetas = {};
 let contas = JSON.parse(localStorage.getItem('contas')) || [{nome:'Itaú', tipo:'Corrente'},{nome:'Nubank', tipo:'Crédito'}];
 let categorias = JSON.parse(localStorage.getItem('categorias')) || ['Mercado', 'Transporte', 'Casa', 'Lazer'];
 let userSession = null;
-let chartsInitialized = false;
 let transacaoEmEdicao = null;
+let parcelamentoPendente = null;
+let charts = {};
 
 // ===== FUNÇÕES DE ALERT =====
 function showAlert(msg, type = 'success') {
@@ -365,6 +397,20 @@ async function carregarDados() {
     }
 }
 
+// ===== PARCELAMENTO =====
+document.getElementById('tipoParcelamento').addEventListener('change', function() {
+    const parcelas = document.getElementById('parcelas');
+    const tipoParcela = document.getElementById('tipoParcela');
+    if(this.value === 'parcelado') {
+        parcelas.style.display = 'block';
+        tipoParcela.style.display = 'block';
+    } else {
+        parcelas.value = '1';
+        parcelas.style.display = 'none';
+        tipoParcela.style.display = 'none';
+    }
+});
+
 // ===== ADICIONAR TRANSAÇÃO =====
 async function add() {
     const v = parseMoeda(document.getElementById('valor').value);
@@ -372,6 +418,7 @@ async function add() {
     const desc = document.getElementById('descricao').value.trim();
     const c = document.getElementById('conta').value;
     const cat = document.getElementById('categoria').value;
+    const tipo = document.getElementById('tipoParcelamento').value;
     const p = parseInt(document.getElementById('parcelas').value) || 1;
 
     if(!v || !d || !desc || !c || !cat) {
@@ -379,25 +426,75 @@ async function add() {
         return;
     }
 
+    if(tipo === 'parcelado' && (p < 2 || p > 12)) {
+        alert('❌ Parcelas deve ser entre 2 e 12!');
+        return;
+    }
+
+    // Mostrar confirmação de parcelamento
+    if(tipo === 'parcelado' && p > 1) {
+        const valorParcela = v / p;
+        let parcelasTexto = '';
+        let [ano, mes, dia] = d.split('-').map(Number);
+        
+        for(let i = 0; i < p; i++) {
+            let dataParc = new Date(ano, mes - 1 + i, dia);
+            parcelasTexto += `${i+1}ª parcela: ${format(valorParcela)} - ${dataParc.toLocaleDateString('pt-BR')}<br>`;
+        }
+
+        document.getElementById('parcelasInfo').innerHTML = `
+            <strong>${desc}</strong><br>
+            Valor total: <strong>${format(v)}</strong><br>
+            ${p}x de <strong>${format(valorParcela)}</strong><br><br>
+            <small>${parcelasTexto}</small>
+        `;
+        
+        parcelamentoPendente = {v, d, desc, c, cat, p, tipo};
+        document.getElementById('modalParcelas').classList.add('show');
+        return;
+    }
+
+    await executarAdicao(v, d, desc, c, cat, p, tipo);
+}
+
+async function confirmarParcelamento() {
+    if(parcelamentoPendente) {
+        await executarAdicao(parcelamentoPendente.v, parcelamentoPendente.d, parcelamentoPendente.desc, 
+                           parcelamentoPendente.c, parcelamentoPendente.cat, parcelamentoPendente.p, parcelamentoPendente.tipo);
+        fecharModalParcelas();
+    }
+}
+
+function fecharModalParcelas() {
+    document.getElementById('modalParcelas').classList.remove('show');
+    parcelamentoPendente = null;
+}
+
+async function executarAdicao(v, d, desc, c, cat, p, tipo) {
     try {
-        const btn = event.target;
+        const btn = document.querySelector('.btn-primary:nth-of-type(3)');
         btn.disabled = true;
         btn.innerHTML = '<span class="loading"></span>';
 
         let inserts = [];
         let [ano, mes, dia] = d.split('-').map(Number);
-        let valorFinal = document.getElementById('tipoParcela').value === 'total' ? v/p : v;
+        let valorFinal = tipo === 'parcelado' ? v / p : v;
+
+        const serieId = Date.now() + '-' + Math.random();
 
         for(let i=0; i<p; i++) {
             let dataParc = new Date(ano, mes - 1 + i, dia);
             inserts.push({
                 user_id: userSession.user.id,
                 tipo: document.getElementById('tipo').value,
-                descricao: desc + (p > 1 ? ` ${i+1}/${p}` : ''),
+                descricao: p > 1 ? `${desc} ${i+1}/${p}` : desc,
                 valor: valorFinal,
                 data: dataParc.toISOString().split('T')[0],
                 conta: c,
-                categoria: cat
+                categoria: cat,
+                serie_id: p > 1 ? serieId : null,
+                parcela_numero: p > 1 ? i + 1 : null,
+                parcela_total: p > 1 ? p : null
             });
         }
 
@@ -412,13 +509,14 @@ async function add() {
             document.getElementById('descricao').value = '';
             document.getElementById('valor').value = '';
             document.getElementById('parcelas').value = '1';
+            document.getElementById('tipoParcelamento').value = 'fixo';
             alert('✅ Transação(ões) salva(s) com sucesso!');
             await carregarDados();
         }
     } catch(e) {
         alert('❌ Erro: ' + e.message);
-        btn.disabled = false;
-        btn.innerText = 'Adicionar Lançamento';
+        document.querySelector('.btn-primary:nth-of-type(3)').disabled = false;
+        document.querySelector('.btn-primary:nth-of-type(3)').innerText = 'Adicionar Lançamento';
     }
 }
 
@@ -461,6 +559,18 @@ function abrirEdicao(transacao) {
     document.getElementById('editConta').value = transacao.conta;
     document.getElementById('editCategoria').value = transacao.categoria;
     
+    // Mostrar informações de parcelamento
+    if(transacao.parcela_total && transacao.parcela_total > 1) {
+        document.getElementById('editParcelasInfo').innerHTML = `
+            Parcela ${transacao.parcela_numero} de ${transacao.parcela_total}<br>
+            <strong>Opções de edição:</strong>
+        `;
+        document.getElementById('editOpcaoParcela').style.display = 'block';
+    } else {
+        document.getElementById('editParcelasInfo').innerHTML = '';
+        document.getElementById('editOpcaoParcela').style.display = 'none';
+    }
+    
     renderConfigs();
     
     document.getElementById('editModal').classList.add('show');
@@ -474,26 +584,63 @@ function fecharModal() {
 async function salvarEdicao() {
     if(!transacaoEmEdicao) return;
 
-    try {
-        const { error } = await supabaseClient
-            .from('transacoes')
-            .update({
-                tipo: document.getElementById('editTipo').value,
-                descricao: document.getElementById('editDescricao').value,
-                valor: parseMoeda(document.getElementById('editValor').value),
-                data: document.getElementById('editData').value,
-                conta: document.getElementById('editConta').value,
-                categoria: document.getElementById('editCategoria').value
-            })
-            .eq('id', transacaoEmEdicao.id);
+    const novoValor = parseMoeda(document.getElementById('editValor').value);
+    const updateData = {
+        tipo: document.getElementById('editTipo').value,
+        descricao: document.getElementById('editDescricao').value,
+        valor: novoValor,
+        data: document.getElementById('editData').value,
+        conta: document.getElementById('editConta').value,
+        categoria: document.getElementById('editCategoria').value
+    };
 
-        if(error) {
-            alert('❌ Erro ao atualizar: ' + error.message);
+    try {
+        const opcao = document.getElementById('editOpcaoParcela').value;
+
+        if(transacaoEmEdicao.parcela_total && transacaoEmEdicao.parcela_total > 1) {
+            if(opcao === 'atual') {
+                // Apenas esta transação
+                const { error } = await supabaseClient
+                    .from('transacoes')
+                    .update(updateData)
+                    .eq('id', transacaoEmEdicao.id);
+
+                if(error) throw error;
+            } else if(opcao === 'futuros') {
+                // Esta e futuras
+                const { data: futuros } = await supabaseClient
+                    .from('transacoes')
+                    .select('id')
+                    .eq('serie_id', transacaoEmEdicao.serie_id)
+                    .gte('parcela_numero', transacaoEmEdicao.parcela_numero);
+
+                for(let t of futuros || []) {
+                    await supabaseClient.from('transacoes').update(updateData).eq('id', t.id);
+                }
+            } else if(opcao === 'todos') {
+                // Todas da série
+                const { data: todos } = await supabaseClient
+                    .from('transacoes')
+                    .select('id')
+                    .eq('serie_id', transacaoEmEdicao.serie_id);
+
+                for(let t of todos || []) {
+                    await supabaseClient.from('transacoes').update(updateData).eq('id', t.id);
+                }
+            }
         } else {
-            alert('✅ Transação atualizada!');
-            fecharModal();
-            await carregarDados();
+            // Transação sem parcelamento
+            const { error } = await supabaseClient
+                .from('transacoes')
+                .update(updateData)
+                .eq('id', transacaoEmEdicao.id);
+
+            if(error) throw error;
         }
+
+        alert('✅ Transação atualizada!');
+        fecharModal();
+        await carregarDados();
     } catch(e) {
         alert('❌ Erro: ' + e.message);
     }
@@ -630,11 +777,9 @@ function desenharGraficos() {
     const despesas = meses.map(m => porMes[m].despesa);
 
     const ctx1 = document.getElementById('grafico1');
-    if(ctx1.chart) ctx1.chart.destroy();
+    if(charts.bar) charts.bar.destroy();
     
-    Chart.register(ChartDataLabels);
-    
-    ctx1.chart = new Chart(ctx1, {
+    charts.bar = new Chart(ctx1, {
         type: 'bar',
         data: {
             labels: meses.map(m => {
@@ -658,16 +803,18 @@ function desenharGraficos() {
                 }
             ]
         },
+        plugins: [ChartDataLabels],
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: {labels: {color: 'var(--text-main)', font: {size: 12, weight: 'bold'}}},
+                legend: {labels: {color: 'var(--text-main)', font: {size: 14, weight: 'bold'}, padding: 15}},
                 tooltip: {
                     callbacks: {label: (c) => format(c.parsed.y)},
-                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    backgroundColor: 'rgba(0,0,0,0.9)',
                     titleColor: 'var(--text-main)',
                     bodyColor: 'var(--text-main)',
-                    padding: 10,
+                    padding: 12,
                     font: {size: 14, weight: 'bold'}
                 },
                 datalabels: {
@@ -675,7 +822,8 @@ function desenharGraficos() {
                     font: {weight: 'bold', size: 13},
                     formatter: (value) => value > 0 ? format(value) : '',
                     anchor: 'end',
-                    align: 'top'
+                    align: 'top',
+                    offset: 8
                 }
             },
             scales: {
@@ -684,7 +832,7 @@ function desenharGraficos() {
                     ticks: {
                         color: 'var(--text-muted)',
                         callback: (value) => format(value),
-                        font: {size: 11, weight: 'bold'}
+                        font: {size: 12, weight: 'bold'}
                     },
                     grid: {color: 'rgba(255,255,255,0.1)'}
                 },
@@ -706,9 +854,9 @@ function desenharGraficos() {
 
     const cores = ['#FF6600', '#f43f5e', '#10b981', '#3b82f6', '#a78bfa', '#f97316'];
     const ctx2 = document.getElementById('grafico2');
-    if(ctx2.chart) ctx2.chart.destroy();
+    if(charts.doughnut) charts.doughnut.destroy();
     
-    ctx2.chart = new Chart(ctx2, {
+    charts.doughnut = new Chart(ctx2, {
         type: 'doughnut',
         data: {
             labels: Object.keys(porCategoria),
@@ -719,18 +867,20 @@ function desenharGraficos() {
                 borderWidth: 2
             }]
         },
+        plugins: [ChartDataLabels],
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    labels: {color: 'var(--text-main)', font: {size: 12, weight: 'bold'}, padding: 15}
+                    labels: {color: 'var(--text-main)', font: {size: 13, weight: 'bold'}, padding: 15}
                 },
                 tooltip: {
                     callbacks: {label: (c) => format(c.parsed)},
-                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    backgroundColor: 'rgba(0,0,0,0.9)',
                     titleColor: 'var(--text-main)',
                     bodyColor: 'var(--text-main)',
-                    padding: 10,
+                    padding: 12,
                     font: {size: 14, weight: 'bold'}
                 },
                 datalabels: {
@@ -860,8 +1010,12 @@ document.getElementById('data').valueAsDate = new Date();
 // Fechar modal ao clicar fora
 window.onclick = (e) => {
     const modal = document.getElementById('editModal');
+    const modalP = document.getElementById('modalParcelas');
     if(e.target === modal) {
         fecharModal();
+    }
+    if(e.target === modalP) {
+        fecharModalParcelas();
     }
 };
 </script>
