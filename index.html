@@ -48,6 +48,7 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .hidden { display: none !important; }
 
 .card { background: var(--card-bg); padding: 18px; border-radius: 20px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+.card h3 { text-align: center; color: var(--accent-orange); font-size: 1.2rem; margin-bottom: 15px; }
 .dash-item { padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .dash-val { font-size: 1.1rem; font-weight: bold; }
 
@@ -65,6 +66,9 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .alert-msg { padding: 12px; margin-bottom: 10px; border-radius: 8px; text-align: center; font-weight: bold; }
 .alert-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
 .alert-error { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
+
+/* GRÁFICOS */
+canvas { max-height: 300px; }
 </style>
 </head>
 
@@ -129,6 +133,13 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
     </div>
 
     <div id="graficos" class="page hidden">
+        <div class="card">
+            <h3>Filtro de Datas</h3>
+            <div style="display: flex; gap: 8px;">
+                <input type="month" id="mesInicioGraf" onchange="desenharGraficos()">
+                <input type="month" id="mesFimGraf" onchange="desenharGraficos()">
+            </div>
+        </div>
         <div class="card"><h3>Distribuição de Despesas</h3><canvas id="grafico2"></canvas></div>
         <div class="card"><h3>Balanço Mensal</h3><canvas id="grafico1"></canvas></div>
     </div>
@@ -225,6 +236,19 @@ async function handleAuth(type) {
         btn.disabled = true;
         btn.innerHTML = '<span class="loading"></span>';
 
+        if(type === 'signup') {
+            // Verificar se e-mail já existe
+            const { data: existingUsers } = await supabaseClient.auth.admin.listUsers();
+            const emailExists = existingUsers?.users?.some(u => u.email === email);
+            
+            if(emailExists) {
+                showAlert('❌ Este e-mail já está cadastrado! Use o botão "Acessar Conta"', 'error');
+                btn.disabled = false;
+                btn.innerText = 'Criar Conta';
+                return;
+            }
+        }
+
         const { data, error } = (type === 'login') 
             ? await supabaseClient.auth.signInWithPassword({email, password})
             : await supabaseClient.auth.signUp({email, password});
@@ -233,7 +257,13 @@ async function handleAuth(type) {
         btn.innerText = type === 'login' ? 'Acessar Conta' : 'Criar Conta';
         
         if(error) {
-            showAlert('❌ ' + error.message, 'error');
+            if(error.message.includes('Invalid login credentials')) {
+                showAlert('❌ E-mail ou senha incorretos', 'error');
+            } else if(error.message.includes('already registered')) {
+                showAlert('❌ Este e-mail já está cadastrado! Use o botão "Acessar Conta"', 'error');
+            } else {
+                showAlert('❌ ' + error.message, 'error');
+            }
         } else if(type === 'signup') {
             showAlert('✅ Conta criada! Verifique seu e-mail', 'success');
         }
@@ -438,17 +468,17 @@ function atualizar() {
         const status = saldo >= meta ? '✅ Meta atingida!' : `❌ Faltam ${format(meta - saldo)}`;
         metaDiv.innerText = status;
     }
-
-    // Desenhar gráficos se estiver na aba
-    if(!document.getElementById('graficos').classList.contains('hidden') && !chartsInitialized) {
-        desenharGraficos();
-        chartsInitialized = true;
-    }
 }
 
 // ===== GRÁFICOS =====
 function desenharGraficos() {
-    const dados = filtrar(transacoes);
+    const s = document.getElementById('mesInicioGraf').value;
+    const e = document.getElementById('mesFimGraf').value;
+    
+    const dados = transacoes.filter(t => {
+        let d = t.data.slice(0, 7);
+        return (!s || d >= s) && (!e || d <= e);
+    });
     
     // Gráfico 1: Balanço Mensal
     let porMes = {};
@@ -491,8 +521,27 @@ function desenharGraficos() {
         },
         options: {
             responsive: true,
-            plugins: {legend: {labels: {color: 'var(--text-main)'}}, tooltip: {callbacks: {label: (c) => format(c.parsed.y)}}},
-            scales: {y: {beginAtZero: true, ticks: {color: 'var(--text-muted)'}}}
+            plugins: {
+                legend: {labels: {color: 'var(--text-main)'}},
+                tooltip: {callbacks: {label: (c) => format(c.parsed.y)}},
+                datalabels: {
+                    color: 'var(--text-main)',
+                    font: {weight: 'bold'},
+                    formatter: (value) => format(value)
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: 'var(--text-muted)',
+                        callback: (value) => format(value)
+                    }
+                },
+                x: {
+                    ticks: {color: 'var(--text-muted)'}
+                }
+            }
         }
     });
 
@@ -520,7 +569,12 @@ function desenharGraficos() {
             responsive: true,
             plugins: {
                 legend: {labels: {color: 'var(--text-main)'}},
-                tooltip: {callbacks: {label: (c) => format(c.parsed)}}
+                tooltip: {callbacks: {label: (c) => format(c.parsed)}},
+                datalabels: {
+                    color: 'var(--text-main)',
+                    font: {weight: 'bold'},
+                    formatter: (value) => format(value)
+                }
             }
         }
     });
@@ -533,7 +587,6 @@ function trocarAba(aba, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
 
-    chartsInitialized = false; // Resetar para redraw
     if(aba === 'graficos') {
         setTimeout(() => desenharGraficos(), 100);
     }
