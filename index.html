@@ -26,7 +26,6 @@
 body { background: var(--bg-color); color: var(--text-main); padding: 10px; padding-bottom: 100px; }
 .container { max-width: 600px; margin: auto; }
 
-/* LOGIN SCREEN */
 #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; max-width: 450px; margin: auto; }
 .login-title { color: var(--accent-orange); font-size: 2.5rem; font-weight: bold; margin-bottom: 30px; letter-spacing: 3px; text-transform: uppercase; }
 .login-card { background: var(--card-bg); width: 100%; padding: 30px; border-radius: 20px; border: 1px solid var(--border-color); }
@@ -41,7 +40,6 @@ button:active { opacity: 0.7; }
 .btn-secondary { background: #222; color: #fff; width: 100%; }
 .btn-danger { background: var(--accent-red); color: white; width: 100%; }
 
-/* HEADER & APP */
 .header { text-align: center; padding: 20px 0; border-bottom: 1px solid var(--border-color); position: relative; margin-bottom: 15px; }
 h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; letter-spacing: 3px; }
 .btn-privacy { position: absolute; right: 10px; top: 25px; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
@@ -65,7 +63,6 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .btn-edit { background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
 .btn-delete { background: var(--accent-red); color: white; border: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
 
-/* LOADING & ALERTS */
 .loading { display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc; border-top: 2px solid var(--accent-orange); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .alert-msg { padding: 12px; margin-bottom: 10px; border-radius: 8px; text-align: center; font-weight: bold; }
@@ -73,32 +70,24 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .alert-error { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
 .alert-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
-/* GRÁFICOS */
 .graficos-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
 .grafico-wrapper { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); }
 canvas { max-height: 350px !important; width: 100% !important; }
 
-/* MODAL */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); overflow-y: auto; }
 .modal.show { display: flex; align-items: center; justify-content: center; }
 .modal-content { background: var(--card-bg); padding: 20px; border-radius: 15px; max-width: 500px; width: 90%; border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
 .modal-content h2 { color: var(--accent-orange); margin-bottom: 15px; }
 .modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 
-/* ÍCONES DE CATEGORIAS */
-.categoria-icon { display: inline-block; margin-right: 5px; }
-
-/* SALDO POR CONTA */
 .conta-saldo { padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
 .conta-saldo strong { color: var(--accent-orange); }
 
-/* TABELAS */
 .tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .tabela th { background: rgba(255,255,255,0.05); padding: 10px; text-align: left; color: var(--accent-orange); }
 .tabela td { padding: 10px; border-bottom: 1px solid var(--border-color); }
 .tabela tr:hover { background: rgba(255,255,255,0.03); }
 
-/* BADGE */
 .badge { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
 .badge-green { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
 .badge-red { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
@@ -107,7 +96,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
 
 <body>
 
-<!-- TELA DE RESET DE SENHA -->
 <div id="reset-screen" class="hidden">
     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; max-width: 450px; margin: auto; padding: 20px;">
         <div class="login-title">SALDO + PRÓ</div>
@@ -122,7 +110,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- TELA DE LOGIN -->
 <div id="auth-screen">
     <div class="login-title">SALDO + PRÓ</div>
     <div class="login-card">
@@ -138,11 +125,10 @@ canvas { max-height: 350px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- APP PRINCIPAL -->
 <div id="main-app" class="container hidden">
     <div class="header">
         <h1>Saldo + Pró</h1>
-        <button class="btn-privacy" onclick="togglePrivacidade()" id="btnPrivacy">👁️</button>
+        <button class="btn-privacy" onclick="togglePrivacidade()" id="btnPrivacy" style="display: none;">👁️</button>
     </div>
 
     <div id="home" class="page">
@@ -182,7 +168,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
                 </select>
                 <input id="parcelas" type="number" value="1" min="1" max="12" placeholder="Parcelas (até 12)">
             </div>
-            <select id="tipoParcela" style="display:none;"><option value="total">Valor Total</option><option value="mensal">Valor Mensal</option></select>
             <button class="btn-primary" onclick="add()">Adicionar Lançamento</button>
         </div>
         <div id="listaLancamentos"></div>
@@ -322,7 +307,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
     </nav>
 </div>
 
-<!-- MODAL DE EDIÇÃO -->
 <div id="editModal" class="modal">
     <div class="modal-content">
         <h2>Editar Lançamento</h2>
@@ -332,17 +316,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
         <input id="editData" type="date">
         <select id="editConta"></select>
         <select id="editCategoria"></select>
-        <div id="editParcelasInfo" style="padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted);"></div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-            <div>
-                <label style="font-size: 0.8rem; color: var(--text-muted);">Aplicar a:</label>
-                <select id="editOpcaoParcela">
-                    <option value="atual">Apenas este</option>
-                    <option value="futuros">Este e futuros</option>
-                    <option value="todos">Todos da série</option>
-                </select>
-            </div>
-        </div>
         <div class="modal-buttons">
             <button class="btn-secondary" onclick="fecharModal()">Cancelar</button>
             <button class="btn-primary" onclick="salvarEdicao()">Salvar</button>
@@ -350,7 +323,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- MODAL DE PARCELAMENTO -->
 <div id="modalParcelas" class="modal">
     <div class="modal-content">
         <h2>Confirmar Parcelamento</h2>
@@ -362,7 +334,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- MODAL DE LIMITE DE GASTO -->
 <div id="modalLimite" class="modal">
     <div class="modal-content">
         <h2>Adicionar Limite de Gasto</h2>
@@ -375,7 +346,6 @@ canvas { max-height: 350px !important; width: 100% !important; }
     </div>
 </div>
 
-<!-- MODAL DE REINICIO -->
 <div id="modalReinicio" class="modal">
     <div class="modal-content">
         <h2>Reiniciar Dados</h2>
@@ -389,12 +359,10 @@ canvas { max-height: 350px !important; width: 100% !important; }
 </div>
 
 <script>
-// ===== CONFIGURAÇÃO SUPABASE =====
 const SUPABASE_URL = 'https://mjgxiqjsmfnmfkvtbdka.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_SJAXu2tYMNFAvG5KNj4E7w_DW-oae1f';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ===== ÍCONES DE CATEGORIAS =====
 const iconesCategoria = {
     'Mercado': '🛒', 'Transporte': '🚗', 'Casa': '🏠', 'Lazer': '🎭',
     'Saúde': '⚕️', 'Educação': '📚', 'Alimentação': '🍕', 'Telefone': '📱',
@@ -403,7 +371,6 @@ const iconesCategoria = {
     'Transferência': '💸'
 };
 
-// ===== VARIÁVEIS GLOBAIS =====
 let transacoes = [];
 let transferencias = [];
 let nuvemMetas = {};
@@ -413,18 +380,27 @@ let categorias = JSON.parse(localStorage.getItem('categorias')) || ['Mercado', '
 let userSession = null;
 let transacaoEmEdicao = null;
 let parcelamentoPendente = null;
+let tipoTransacaoPendente = null;
 let charts = {};
 
-// ===== VERIFICAR RESET DE SENHA AO CARREGAR =====
 window.addEventListener('load', async () => {
     const hash = window.location.hash;
     if(hash.includes('type=recovery')) {
         document.getElementById('auth-screen').classList.add('hidden');
         document.getElementById('reset-screen').classList.remove('hidden');
     }
+    
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(session) {
+        userSession = session;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('reset-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('btnPrivacy').style.display = 'block';
+        carregarDados();
+    }
 });
 
-// ===== RESET DE SENHA =====
 async function confirmarResetSenha() {
     const novaSenha = document.getElementById('novaSenha').value;
     const confirmarSenha = document.getElementById('confirmarSenha').value;
@@ -445,9 +421,7 @@ async function confirmarResetSenha() {
     }
 
     try {
-        const { error } = await supabaseClient.auth.updateUser({
-            password: novaSenha
-        });
+        const { error } = await supabaseClient.auth.updateUser({ password: novaSenha });
 
         if(error) {
             showResetAlert('❌ Erro: ' + error.message, 'error');
@@ -477,7 +451,6 @@ function voltarLogin() {
     window.location.href = window.location.origin + window.location.pathname;
 }
 
-// ===== FUNÇÕES DE ALERT =====
 function showAlert(msg, type = 'success') {
     const alertDiv = document.getElementById('auth-alert');
     if(!alertDiv) return;
@@ -491,7 +464,6 @@ function showAlert(msg, type = 'success') {
     }, 5000);
 }
 
-// ===== AUTENTICAÇÃO =====
 async function handleAuth(type) {
     const email = document.getElementById('auth-email').value.trim();
     const password = document.getElementById('auth-password').value;
@@ -564,7 +536,6 @@ async function handleLogout() {
     window.location.reload();
 }
 
-// ===== OBSERVADOR DE AUTENTICAÇÃO =====
 supabaseClient.auth.onAuthStateChange((event, session) => {
     userSession = session;
     if(session) {
@@ -579,7 +550,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     }
 });
 
-// ===== CARREGAMENTO DE DADOS =====
 async function carregarDados() {
     if(!userSession) return;
 
@@ -609,26 +579,17 @@ async function carregarDados() {
     }
 }
 
-// ===== PARCELAMENTO =====
 document.getElementById('tipoParcelamento').addEventListener('change', function() {
     const parcelas = document.getElementById('parcelas');
-    const tipoParcela = document.getElementById('tipoParcela');
-    if(this.value === 'parcelado') {
+    if(this.value === 'parcelado' || this.value === 'recorrente') {
         parcelas.style.display = 'block';
-        tipoParcela.style.display = 'block';
-        parcelas.placeholder = 'Parcelas (2-12)';
-    } else if(this.value === 'recorrente') {
-        parcelas.style.display = 'block';
-        tipoParcela.style.display = 'none';
-        parcelas.placeholder = 'Repetir (meses)';
+        parcelas.placeholder = this.value === 'parcelado' ? 'Parcelas (2-12)' : 'Repetir (meses)';
     } else {
         parcelas.value = '1';
         parcelas.style.display = 'none';
-        tipoParcela.style.display = 'none';
     }
 });
 
-// ===== ADICIONAR TRANSAÇÃO =====
 async function add() {
     const v = parseMoeda(document.getElementById('valor').value);
     const d = document.getElementById('data').value;
@@ -636,6 +597,7 @@ async function add() {
     const c = document.getElementById('conta').value;
     const cat = document.getElementById('categoria').value;
     const tipo = document.getElementById('tipoParcelamento').value;
+    const tipoTransacao = document.getElementById('tipo').value;
     const p = parseInt(document.getElementById('parcelas').value) || 1;
 
     if(!v || !d || !desc || !c || !cat) {
@@ -672,17 +634,18 @@ async function add() {
         `;
         
         parcelamentoPendente = {v, d, desc, c, cat, p, tipo};
+        tipoTransacaoPendente = tipoTransacao;
         document.getElementById('modalParcelas').classList.add('show');
         return;
     }
 
-    await executarAdicao(v, d, desc, c, cat, p, tipo);
+    await executarAdicao(v, d, desc, c, cat, p, tipo, tipoTransacao);
 }
 
 async function confirmarParcelamento() {
     if(parcelamentoPendente) {
         await executarAdicao(parcelamentoPendente.v, parcelamentoPendente.d, parcelamentoPendente.desc, 
-                           parcelamentoPendente.c, parcelamentoPendente.cat, parcelamentoPendente.p, parcelamentoPendente.tipo);
+                           parcelamentoPendente.c, parcelamentoPendente.cat, parcelamentoPendente.p, parcelamentoPendente.tipo, tipoTransacaoPendente);
         fecharModalParcelas();
     }
 }
@@ -690,9 +653,10 @@ async function confirmarParcelamento() {
 function fecharModalParcelas() {
     document.getElementById('modalParcelas').classList.remove('show');
     parcelamentoPendente = null;
+    tipoTransacaoPendente = null;
 }
 
-async function executarAdicao(v, d, desc, c, cat, p, tipo) {
+async function executarAdicao(v, d, desc, c, cat, p, tipo, tipoTransacao) {
     try {
         const btn = document.querySelector('button[onclick="add()"]');
         btn.disabled = true;
@@ -708,7 +672,7 @@ async function executarAdicao(v, d, desc, c, cat, p, tipo) {
                 let dataParc = new Date(ano, mes - 1 + i, dia);
                 inserts.push({
                     user_id: userSession.user.id,
-                    tipo: document.getElementById('tipo').value,
+                    tipo: tipoTransacao,
                     descricao: desc + ' (Recorrente)',
                     valor: v,
                     data: dataParc.toISOString().split('T')[0],
@@ -724,7 +688,7 @@ async function executarAdicao(v, d, desc, c, cat, p, tipo) {
                 let dataParc = new Date(ano, mes - 1 + i, dia);
                 inserts.push({
                     user_id: userSession.user.id,
-                    tipo: document.getElementById('tipo').value,
+                    tipo: tipoTransacao,
                     descricao: `${desc} ${i+1}/${p}`,
                     valor: valorFinal,
                     data: dataParc.toISOString().split('T')[0],
@@ -736,7 +700,7 @@ async function executarAdicao(v, d, desc, c, cat, p, tipo) {
         } else {
             inserts.push({
                 user_id: userSession.user.id,
-                tipo: document.getElementById('tipo').value,
+                tipo: tipoTransacao,
                 descricao: desc,
                 valor: v,
                 data: d,
@@ -767,7 +731,6 @@ async function executarAdicao(v, d, desc, c, cat, p, tipo) {
     }
 }
 
-// ===== SALVAR META =====
 async function salvarMeta() {
     const mes = document.getElementById('mesInicio').value;
     const v = parseMoeda(document.getElementById('metaValor').value);
@@ -796,7 +759,6 @@ async function salvarMeta() {
     }
 }
 
-// ===== EDITAR TRANSAÇÃO =====
 function abrirEdicao(transacao) {
     transacaoEmEdicao = transacao;
     document.getElementById('editTipo').value = transacao.tipo;
@@ -844,7 +806,6 @@ async function salvarEdicao() {
     }
 }
 
-// ===== DELETAR TRANSAÇÃO =====
 async function deletarTransacao(id) {
     if(!confirm('Tem certeza?')) return;
 
@@ -865,7 +826,6 @@ async function deletarTransacao(id) {
     }
 }
 
-// ===== SALDO POR CONTA =====
 function atualizarSaldoContas() {
     const saldoDiv = document.getElementById('saldoContas');
     let html = '';
@@ -892,7 +852,6 @@ function atualizarSaldoContas() {
     renderConfigs();
 }
 
-// ===== TRANSFERÊNCIAS =====
 async function adicionarTransferencia() {
     const desc = document.getElementById('transferDesc').value.trim();
     const v = parseMoeda(document.getElementById('transferValor').value);
@@ -939,7 +898,6 @@ async function adicionarTransferencia() {
     }
 }
 
-// ===== LIMITES DE GASTO =====
 function abrirModalLimite() {
     const select = document.getElementById('limiteCategoria');
     select.innerHTML = '';
@@ -1000,7 +958,6 @@ function deletarLimite(cat) {
     atualizarLimites();
 }
 
-// ===== RELATÓRIOS =====
 function atualizarRelatorios() {
     let porCategoria = {};
     transacoes.filter(t => t.tipo === 'despesa').forEach(t => {
@@ -1013,8 +970,8 @@ function atualizarRelatorios() {
     topCat.forEach(([cat, valor]) => {
         const icon = iconesCategoria[cat] || '💰';
         html += `<div class="conta-saldo">
-            <div><span class="categoria-icon">${icon}</span> <strong>${cat}</strong></div>
-            <div style="color: var(--accent-red); font-weight: bold;">${format(valor)}</div>
+            <div><span>${icon}</span> <strong>${cat}</strong></div>
+            <div style="color: var(--accent-red);">${format(valor)}</div>
         </div>`;
     });
     document.getElementById('topCategorias').innerHTML = html || '<p style="color: var(--text-muted);">Sem dados</p>';
@@ -1025,7 +982,7 @@ function atualizarRelatorios() {
         const receita = dados.filter(t => t.tipo === 'receita').reduce((a, b) => a + b.valor, 0);
         const despesa = dados.filter(t => t.tipo === 'despesa').reduce((a, b) => a + b.valor, 0);
         const realizado = receita - despesa;
-        const status = realizado >= meta ? '<span class="badge badge-green">✅ Atingida</span>' : '<span class="badge badge-red">❌ Não</span>';
+        const status = realizado >= meta ? '<span class="badge badge-green">✅ OK</span>' : '<span class="badge badge-red">❌</span>';
 
         htmlMetas += `<tr>
             <td>${new Date(mes).toLocaleDateString('pt-BR', {month: 'short', year: 'numeric'})}</td>
@@ -1034,12 +991,9 @@ function atualizarRelatorios() {
             <td>${status}</td>
         </tr>`;
     });
-    document.getElementById('tabelaMetas').innerHTML = htmlMetas || '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Sem metas</td></tr>';
-
-    atualizarLimites();
+    document.getElementById('tabelaMetas').innerHTML = htmlMetas || '<tr><td colspan="4" style="text-align: center;">Sem metas</td></tr>';
 }
 
-// ===== EXPORT/IMPORT =====
 function exportarCSV() {
     const dados = transacoes.map(t => ({
         Data: t.data,
@@ -1089,28 +1043,27 @@ function importarCSV(event) {
 
             const { error } = await supabaseClient.from('transacoes').insert(inserts);
             if(error) {
-                alert('❌ Erro: ' + error.message);
+                alert('❌ ' + error.message);
             } else {
                 alert(`✅ ${inserts.length} importadas!`);
                 await carregarDados();
             }
         } catch(e) {
-            alert('❌ Erro ao processar: ' + e.message);
+            alert('❌ Erro ao processar');
         }
     };
     reader.readAsText(file);
 }
 
-// ===== ADICIONAR CONTA/CATEGORIA =====
 async function addConfig(tipo) {
     if(tipo === 'contas') {
         const nome = document.getElementById('novaConta').value.trim();
         const tipoC = document.getElementById('tipoConta').value;
-        if(!nome) return alert('❌ Digite o banco');
+        if(!nome) return alert('❌ Digite');
         contas.push({nome, tipo: tipoC});
     } else if(tipo === 'categorias') {
         const nome = document.getElementById('novaCategoria').value.trim();
-        if(!nome) return alert('❌ Digite a categoria');
+        if(!nome) return alert('❌ Digite');
         categorias.push(nome);
     }
 
@@ -1126,7 +1079,6 @@ async function addConfig(tipo) {
     alert('✅ Adicionado!');
 }
 
-// ===== ATUALIZAR INTERFACE =====
 function atualizar() {
     renderConfigs();
     const dados = filtrar(transacoes);
@@ -1142,7 +1094,7 @@ function atualizar() {
         
         lista.innerHTML += `<div class="transacao ${ehR?'receitaItem':'despesaItem'}">
             <div style="flex:1;">
-                <span><span class="categoria-icon">${icon}</span>${t.descricao}<br><small>${dataFormatada}</small></span>
+                <span><span>${icon}</span>${t.descricao}<br><small>${dataFormatada}</small></span>
             </div>
             <div style="text-align:right; margin-right: 10px;"><b class="dash-val">${format(t.valor)}</b></div>
             <div class="transacao-actions">
@@ -1186,7 +1138,6 @@ function atualizar() {
     }
 }
 
-// ===== GRÁFICOS =====
 function desenharGraficos() {
     const s = document.getElementById('mesInicioGraf').value;
     const e = document.getElementById('mesFimGraf').value;
@@ -1196,7 +1147,6 @@ function desenharGraficos() {
         return (!s || d >= s) && (!e || d <= e);
     });
     
-    // Gráfico 1: Balanço Mensal
     let porMes = {};
     dados.forEach(t => {
         const mes = t.data.slice(0, 7);
@@ -1211,7 +1161,6 @@ function desenharGraficos() {
 
     const ctx1 = document.getElementById('grafico1');
     if(charts.bar) charts.bar.destroy();
-    
     charts.bar = new Chart(ctx1, {
         type: 'bar',
         data: {
@@ -1220,120 +1169,56 @@ function desenharGraficos() {
                 return new Date(a, me-1).toLocaleDateString('pt-BR', {month: 'short'});
             }),
             datasets: [
-                {
-                    label: 'Receitas',
-                    data: receitas,
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                    borderColor: 'var(--accent-green)',
-                    borderWidth: 2,
-                    borderRadius: 8
-                },
-                {
-                    label: 'Despesas',
-                    data: despesas,
-                    backgroundColor: 'rgba(244, 63, 94, 0.8)',
-                    borderColor: 'var(--accent-red)',
-                    borderWidth: 2,
-                    borderRadius: 8
-                }
+                { label: 'Receitas', data: receitas, backgroundColor: 'rgba(16, 185, 129, 0.6)', borderRadius: 6 },
+                { label: 'Despesas', data: despesas, backgroundColor: 'rgba(244, 63, 94, 0.6)', borderRadius: 6 }
             ]
         },
-        plugins: [ChartDataLabels],
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    labels: {color: '#FFD700', font: {size: 13, weight: 'bold'}, padding: 20, usePointStyle: true}
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    titleColor: '#FFD700',
-                    bodyColor: '#FFD700',
-                    padding: 15,
-                    font: {size: 13, weight: 'bold'},
-                    cornerRadius: 8,
-                    callbacks: {label: (c) => format(c.parsed.y)}
-                },
-                datalabels: {
-                    color: '#ffffff',
-                    font: {weight: 'bold', size: 11},
-                    formatter: (value) => value > 0 ? format(value) : '',
-                    anchor: 'end',
-                    align: 'top',
-                    offset: 6
-                }
+                legend: { labels: {color: 'var(--text-main)', font: {size: 11}} },
+                tooltip: {backgroundColor: 'rgba(0,0,0,0.8)', titleColor: 'var(--text-main)', bodyColor: 'var(--text-main)', padding: 8},
+                datalabels: { color: 'var(--text-main)', font: {weight: '600', size: 9}, formatter: (value) => value > 0 ? format(value) : '', anchor: 'end', align: 'top', offset: 3 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: 'var(--text-muted)',
-                        callback: (value) => format(value),
-                        font: {size: 11, weight: 'bold'}
-                    },
-                    grid: {color: 'rgba(255,255,255,0.05)'}
-                },
-                x: {
-                    ticks: {color: 'var(--text-muted)', font: {size: 11, weight: 'bold'}},
-                    grid: {display: false}
-                }
+                y: { beginAtZero: true, ticks: {color: 'var(--text-muted)', callback: (value) => format(value)}, grid: {color: 'rgba(255,255,255,0.05)'} },
+                x: { ticks: {color: 'var(--text-muted)'}, grid: {display: false} }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
 
-    // Gráfico 2: Distribuição
     let porCategoria = {};
     dados.forEach(t => {
-        if(t.tipo === 'despesa') {
-            porCategoria[t.categoria] = (porCategoria[t.categoria] || 0) + t.valor;
-        }
+        if(t.tipo === 'despesa') porCategoria[t.categoria] = (porCategoria[t.categoria] || 0) + t.valor;
     });
 
-    const cores = ['#FF6600', '#f43f5e', '#10b981', '#3b82f6', '#a78bfa', '#f97316'];
     const ctx2 = document.getElementById('grafico2');
     if(charts.doughnut) charts.doughnut.destroy();
-    
     charts.doughnut = new Chart(ctx2, {
         type: 'doughnut',
         data: {
-            labels: Object.keys(porCategoria).map(c => c),
+            labels: Object.keys(porCategoria),
             datasets: [{
                 data: Object.values(porCategoria),
-                backgroundColor: cores.slice(0, Object.keys(porCategoria).length),
+                backgroundColor: ['#888', '#999', '#aaa', '#bbb', '#ccc', '#ddd'],
                 borderColor: '#111111',
-                borderWidth: 3
+                borderWidth: 2
             }]
         },
-        plugins: [ChartDataLabels],
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    labels: {color: '#FFD700', font: {size: 12, weight: 'bold'}, padding: 15, usePointStyle: true}
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    titleColor: '#FFD700',
-                    bodyColor: '#FFD700',
-                    padding: 15,
-                    font: {size: 13, weight: 'bold'},
-                    cornerRadius: 8,
-                    callbacks: {label: (c) => format(c.parsed)}
-                },
-                datalabels: {
-                    color: '#ffffff',
-                    font: {weight: 'bold', size: 12},
-                    formatter: (value) => value > 0 ? format(value) : '',
-                    anchor: 'center',
-                    align: 'center'
-                }
+                legend: { labels: {color: 'var(--text-main)', font: {size: 10}} },
+                tooltip: {backgroundColor: 'rgba(0,0,0,0.8)', titleColor: 'var(--text-main)', bodyColor: 'var(--text-main)', padding: 8},
+                datalabels: { color: 'var(--text-main)', font: {weight: '600', size: 9}, formatter: (value) => format(value), anchor: 'center', align: 'center' }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
 
-    // Gráfico 3: Evolução
     let evolucao = {};
     let saldoAcumulado = 0;
     dados.sort((a, b) => new Date(a.data) - new Date(b.data)).forEach(t => {
@@ -1348,7 +1233,6 @@ function desenharGraficos() {
 
     const ctx3 = document.getElementById('grafico3');
     if(charts.line) charts.line.destroy();
-    
     charts.line = new Chart(ctx3, {
         type: 'line',
         data: {
@@ -1360,67 +1244,37 @@ function desenharGraficos() {
                 label: 'Saldo Acumulado',
                 data: valoresEvolucao,
                 borderColor: 'var(--accent-orange)',
-                backgroundColor: 'rgba(255, 102, 0, 0.15)',
-                tension: 0.4,
+                backgroundColor: 'rgba(255, 102, 0, 0.1)',
+                tension: 0.3,
                 fill: true,
                 pointBackgroundColor: 'var(--accent-orange)',
-                pointBorderColor: '#111111',
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                borderWidth: 3
+                pointBorderWidth: 0,
+                pointRadius: 4,
+                borderWidth: 2
             }]
         },
-        plugins: [ChartDataLabels],
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    labels: {color: '#FFD700', font: {size: 13, weight: 'bold'}, padding: 15, usePointStyle: true}
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    titleColor: '#FFD700',
-                    bodyColor: '#FFD700',
-                    padding: 15,
-                    font: {size: 13, weight: 'bold'},
-                    cornerRadius: 8,
-                    callbacks: {label: (c) => format(c.parsed.y)}
-                },
-                datalabels: {
-                    color: '#ffffff',
-                    font: {weight: 'bold', size: 11},
-                    formatter: (value) => format(value),
-                    anchor: 'end',
-                    align: 'top',
-                    offset: 6
-                }
+                legend: { labels: {color: 'var(--text-main)', font: {size: 11}} },
+                tooltip: {backgroundColor: 'rgba(0,0,0,0.8)', titleColor: 'var(--text-main)', bodyColor: 'var(--text-main)', padding: 8},
+                datalabels: { display: false }
             },
             scales: {
-                y: {
-                    ticks: {
-                        color: 'var(--text-muted)',
-                        callback: (value) => format(value),
-                        font: {size: 11, weight: 'bold'}
-                    },
-                    grid: {color: 'rgba(255,255,255,0.05)'}
-                },
-                x: {
-                    ticks: {color: 'var(--text-muted)', font: {size: 11, weight: 'bold'}},
-                    grid: {display: false}
-                }
+                y: { ticks: {color: 'var(--text-muted)', callback: (value) => format(value)}, grid: {color: 'rgba(255,255,255,0.05)'} },
+                x: { ticks: {color: 'var(--text-muted)'}, grid: {display: false} }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
 
-    // Gráfico 4: Comparativo
     const ultimosMeses = meses.slice(-12);
-    const comparativoReceitaBefore = ultimosMeses.map((m, i) => i > 0 ? porMes[ultimosMeses[i-1]]?.receita || 0 : 0);
-    const comparativaReceitaAfter = ultimosMeses.map(m => porMes[m]?.receita || 0);
+    const comparBefore = ultimosMeses.map((m, i) => i > 0 ? porMes[ultimosMeses[i-1]]?.receita || 0 : 0);
+    const comparAfter = ultimosMeses.map(m => porMes[m]?.receita || 0);
 
     const ctx4 = document.getElementById('grafico4');
     if(charts.comparativo) charts.comparativo.destroy();
-    
     charts.comparativo = new Chart(ctx4, {
         type: 'bar',
         data: {
@@ -1428,69 +1282,28 @@ function desenharGraficos() {
                 const [a, me] = m.split('-');
                 return new Date(a, me-1).toLocaleDateString('pt-BR', {month: 'short'});
             }),
-            datasets: [{
-                label: 'Anterior',
-                data: comparativoReceitaBefore,
-                backgroundColor: 'rgba(100, 100, 100, 0.7)',
-                borderColor: '#666',
-                borderWidth: 1,
-                borderRadius: 6
-            },
-            {
-                label: 'Atual',
-                data: comparativaReceitaAfter,
-                backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                borderColor: 'var(--accent-green)',
-                borderWidth: 2,
-                borderRadius: 6
-            }]
+            datasets: [
+                { label: 'Anterior', data: comparBefore, backgroundColor: 'rgba(100, 100, 100, 0.4)', borderRadius: 6 },
+                { label: 'Atual', data: comparAfter, backgroundColor: 'rgba(16, 185, 129, 0.6)', borderRadius: 6 }
+            ]
         },
-        plugins: [ChartDataLabels],
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    labels: {color: '#FFD700', font: {size: 13, weight: 'bold'}, padding: 15, usePointStyle: true}
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.9)',
-                    titleColor: '#FFD700',
-                    bodyColor: '#FFD700',
-                    padding: 15,
-                    font: {size: 13, weight: 'bold'},
-                    cornerRadius: 8,
-                    callbacks: {label: (c) => format(c.parsed.y)}
-                },
-                datalabels: {
-                    color: '#ffffff',
-                    font: {weight: 'bold', size: 11},
-                    formatter: (value) => value > 0 ? format(value) : '',
-                    anchor: 'end',
-                    align: 'top',
-                    offset: 6
-                }
+                legend: { labels: {color: 'var(--text-main)', font: {size: 11}} },
+                tooltip: {backgroundColor: 'rgba(0,0,0,0.8)', titleColor: 'var(--text-main)', bodyColor: 'var(--text-main)', padding: 8},
+                datalabels: { color: 'var(--text-main)', font: {weight: '600', size: 9}, formatter: (value) => value > 0 ? format(value) : '', anchor: 'end', align: 'top', offset: 3 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        color: 'var(--text-muted)',
-                        callback: (value) => format(value),
-                        font: {size: 11, weight: 'bold'}
-                    },
-                    grid: {color: 'rgba(255,255,255,0.05)'}
-                },
-                x: {
-                    ticks: {color: 'var(--text-muted)', font: {size: 11, weight: 'bold'}},
-                    grid: {display: false}
-                }
+                y: { beginAtZero: true, ticks: {color: 'var(--text-muted)', callback: (value) => format(value)}, grid: {color: 'rgba(255,255,255,0.05)'} },
+                x: { ticks: {color: 'var(--text-muted)'}, grid: {display: false} }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
 }
 
-// ===== TROCAR ABA =====
 function trocarAba(aba, el) {
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
     document.getElementById(aba).classList.remove('hidden');
@@ -1512,7 +1325,6 @@ function trocarAba(aba, el) {
     }
 }
 
-// ===== RENDERIZAR CONFIGS =====
 function renderConfigs() {
     const sc = document.getElementById('conta'), scat = document.getElementById('categoria');
     const esc = document.getElementById('editConta'), escat = document.getElementById('editCategoria');
@@ -1540,7 +1352,7 @@ function renderConfigs() {
     listContas.innerHTML = contas.map((c, i) => 
         `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
             <span>${c.nome} (${c.tipo})</span>
-            <button class="btn-delete" style="width:60px; height:32px;" onclick="removerConta(${i})">❌</button>
+            <button class="btn-delete" onclick="removerConta(${i})">❌</button>
         </div>`
     ).join('');
 
@@ -1548,7 +1360,7 @@ function renderConfigs() {
     listCat.innerHTML = categorias.map((c, i) => 
         `<div style="display:flex; justify-content:space-between; padding:8px; background:#1a1a1a; border-radius:8px; margin:5px 0;">
             <span>${iconesCategoria[c] || '💰'} ${c}</span>
-            <button class="btn-delete" style="width:60px; height:32px;" onclick="removerCategoria(${i})">❌</button>
+            <button class="btn-delete" onclick="removerCategoria(${i})">❌</button>
         </div>`
     ).join('');
 }
@@ -1567,7 +1379,6 @@ function removerCategoria(index) {
     renderConfigs();
 }
 
-// ===== REINICIAR DADOS =====
 function abrirModalReinicio() {
     document.getElementById('modalReinicio').classList.add('show');
 }
@@ -1577,23 +1388,11 @@ function fecharModalReinicio() {
 }
 
 async function executarReinicio(opcao) {
-    if(!confirm('Tem certeza? Não há volta!')) return;
+    if(!confirm('Tem certeza?')) return;
 
     try {
-        const { error: errorTransacoes } = await supabaseClient
-            .from('transacoes')
-            .delete()
-            .eq('user_id', userSession.user.id);
-
-        const { error: errorMetas } = await supabaseClient
-            .from('metas')
-            .delete()
-            .eq('user_id', userSession.user.id);
-
-        if(errorTransacoes || errorMetas) {
-            alert('❌ Erro ao limpar');
-            return;
-        }
+        await supabaseClient.from('transacoes').delete().eq('user_id', userSession.user.id);
+        await supabaseClient.from('metas').delete().eq('user_id', userSession.user.id);
 
         if(opcao === 'excluir') {
             localStorage.removeItem('contas');
@@ -1602,15 +1401,14 @@ async function executarReinicio(opcao) {
             categorias = ['Mercado', 'Transporte', 'Casa', 'Lazer'];
         }
 
-        alert('✅ Dados limpos!');
+        alert('✅ Limpo!');
         fecharModalReinicio();
         await carregarDados();
     } catch(e) {
-        alert('❌ Erro: ' + e.message);
+        alert('❌ ' + e.message);
     }
 }
 
-// ===== FUNÇÕES AUXILIARES =====
 function format(v) {
     return Number(v).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 }
@@ -1632,7 +1430,6 @@ function togglePrivacidade() {
     document.querySelectorAll('.dash-val').forEach(v => v.classList.toggle('blur-active'));
 }
 
-// ===== FORMATAÇÃO DE INPUT =====
 document.getElementById('valor').oninput = e => {
     let v = e.target.value.replace(/\D/g, '');
     e.target.value = (v/100).toFixed(2).replace('.', ',');
@@ -1663,14 +1460,10 @@ if(document.getElementById('editValor')) {
 document.getElementById('data').valueAsDate = new Date();
 
 window.onclick = (e) => {
-    const modal = document.getElementById('editModal');
-    const modalP = document.getElementById('modalParcelas');
-    const modalL = document.getElementById('modalLimite');
-    const modalR = document.getElementById('modalReinicio');
-    if(e.target === modal) fecharModal();
-    if(e.target === modalP) fecharModalParcelas();
-    if(e.target === modalL) fecharModalLimite();
-    if(e.target === modalR) fecharModalReinicio();
+    if(e.target.id === 'editModal') fecharModal();
+    if(e.target.id === 'modalParcelas') fecharModalParcelas();
+    if(e.target.id === 'modalLimite') fecharModalLimite();
+    if(e.target.id === 'modalReinicio') fecharModalReinicio();
 };
 </script>
 </body>
