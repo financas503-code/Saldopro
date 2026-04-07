@@ -71,6 +71,7 @@ h1 { color: var(--accent-orange); font-size: 2rem; text-transform: uppercase; le
 .alert-msg { padding: 12px; margin-bottom: 10px; border-radius: 8px; text-align: center; font-weight: bold; }
 .alert-success { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
 .alert-error { background: rgba(244, 63, 94, 0.2); color: var(--accent-red); }
+.alert-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
 
 /* GRÁFICOS */
 .graficos-container { display: grid; grid-template-columns: 1fr; gap: 20px; }
@@ -191,6 +192,12 @@ canvas { max-height: 400px !important; width: 100% !important; }
             <div id="listaAdminCategorias" style="margin-top:10px"></div>
         </div>
 
+        <div class="card">
+            <h3>Reiniciar Dados</h3>
+            <button class="btn-secondary" onclick="abrirModalReinicio()">Limpar Dados</button>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">Escolha se deseja manter as contas ou excluir tudo.</p>
+        </div>
+
         <button class="btn-danger" onclick="handleLogout()" style="margin-top: 20px;">Sair da Conta</button>
     </div>
 
@@ -242,6 +249,19 @@ canvas { max-height: 400px !important; width: 100% !important; }
     </div>
 </div>
 
+<!-- MODAL DE REINICIO DE DADOS -->
+<div id="modalReinicio" class="modal">
+    <div class="modal-content">
+        <h2>Reiniciar Dados</h2>
+        <p style="margin-bottom: 15px; color: var(--text-muted);">O que deseja fazer?</p>
+        <div class="modal-buttons">
+            <button class="btn-secondary" onclick="executarReinicio('manter')">Manter Contas</button>
+            <button class="btn-danger" onclick="executarReinicio('excluir')">Excluir Tudo</button>
+        </div>
+        <button class="btn-secondary" onclick="fecharModalReinicio()" style="width: 100%; margin-top: 10px;">Cancelar</button>
+    </div>
+</div>
+
 <script>
 // ===== CONFIGURAÇÃO SUPABASE =====
 const SUPABASE_URL = 'https://mjgxiqjsmfnmfkvtbdka.supabase.co';
@@ -269,7 +289,7 @@ function showAlert(msg, type = 'success') {
         document.querySelector('.login-card').insertBefore(alertDiv, document.querySelector('.login-card h2').nextElementSibling);
     }
     
-    setTimeout(() => alertDiv.remove(), 4000);
+    setTimeout(() => alertDiv.remove(), 5000);
 }
 
 // ===== AUTENTICAÇÃO =====
@@ -307,14 +327,18 @@ async function handleAuth(type) {
         btn.innerHTML = '<span class="loading"></span>';
 
         if(type === 'signup') {
-            const { data: existingUsers } = await supabaseClient.auth.admin.listUsers();
-            const emailExists = existingUsers?.users?.some(u => u.email === email);
-            
-            if(emailExists) {
-                showAlert('❌ Este e-mail já está cadastrado! Use o botão "Acessar Conta"', 'error');
-                btn.disabled = false;
-                btn.innerText = 'Criar Conta';
-                return;
+            try {
+                const { data: { users } } = await supabaseClient.auth.admin.listUsers();
+                const emailExists = users?.some(u => u.email === email);
+                
+                if(emailExists) {
+                    showAlert('ℹ️ Este e-mail já está cadastrado! Use o botão "Acessar Conta" para entrar.', 'info');
+                    btn.disabled = false;
+                    btn.innerText = 'Criar Conta';
+                    return;
+                }
+            } catch(e) {
+                // Se não conseguir verificar, tenta criar normalmente
             }
         }
 
@@ -329,7 +353,9 @@ async function handleAuth(type) {
             if(error.message.includes('Invalid login credentials')) {
                 showAlert('❌ E-mail ou senha incorretos', 'error');
             } else if(error.message.includes('already registered')) {
-                showAlert('❌ Este e-mail já está cadastrado! Use o botão "Acessar Conta"', 'error');
+                showAlert('ℹ️ Este e-mail já está cadastrado! Use o botão "Acessar Conta" para entrar.', 'info');
+            } else if(error.message.includes('User already exists')) {
+                showAlert('ℹ️ Este e-mail já está cadastrado! Use o botão "Acessar Conta" para entrar.', 'info');
             } else {
                 showAlert('❌ ' + error.message, 'error');
             }
@@ -667,6 +693,49 @@ async function deletarTransacao(id) {
     }
 }
 
+// ===== REINICIAR DADOS =====
+function abrirModalReinicio() {
+    document.getElementById('modalReinicio').classList.add('show');
+}
+
+function fecharModalReinicio() {
+    document.getElementById('modalReinicio').classList.remove('show');
+}
+
+async function executarReinicio(opcao) {
+    if(!confirm('Tem certeza? Esta ação não pode ser desfeita!')) return;
+
+    try {
+        const { error: errorTransacoes } = await supabaseClient
+            .from('transacoes')
+            .delete()
+            .eq('user_id', userSession.user.id);
+
+        const { error: errorMetas } = await supabaseClient
+            .from('metas')
+            .delete()
+            .eq('user_id', userSession.user.id);
+
+        if(errorTransacoes || errorMetas) {
+            alert('❌ Erro ao limpar dados');
+            return;
+        }
+
+        if(opcao === 'excluir') {
+            localStorage.removeItem('contas');
+            localStorage.removeItem('categorias');
+            contas = [{nome:'Itaú', tipo:'Corrente'},{nome:'Nubank', tipo:'Crédito'}];
+            categorias = ['Mercado', 'Transporte', 'Casa', 'Lazer'];
+        }
+
+        alert('✅ Dados limpos com sucesso!');
+        fecharModalReinicio();
+        await carregarDados();
+    } catch(e) {
+        alert('❌ Erro: ' + e.message);
+    }
+}
+
 // ===== ADICIONAR CONTA/CATEGORIA =====
 async function addConfig(tipo) {
     if(tipo === 'contas') {
@@ -818,7 +887,7 @@ function desenharGraficos() {
                     font: {size: 14, weight: 'bold'}
                 },
                 datalabels: {
-                    color: 'var(--text-main)',
+                    color: '#ffffff',
                     font: {weight: 'bold', size: 13},
                     formatter: (value) => value > 0 ? format(value) : '',
                     anchor: 'end',
@@ -884,7 +953,7 @@ function desenharGraficos() {
                     font: {size: 14, weight: 'bold'}
                 },
                 datalabels: {
-                    color: 'var(--text-main)',
+                    color: '#ffffff',
                     font: {weight: 'bold', size: 13},
                     formatter: (value) => value > 0 ? format(value) : '',
                     anchor: 'center',
@@ -1011,11 +1080,15 @@ document.getElementById('data').valueAsDate = new Date();
 window.onclick = (e) => {
     const modal = document.getElementById('editModal');
     const modalP = document.getElementById('modalParcelas');
+    const modalR = document.getElementById('modalReinicio');
     if(e.target === modal) {
         fecharModal();
     }
     if(e.target === modalP) {
         fecharModalParcelas();
+    }
+    if(e.target === modalR) {
+        fecharModalReinicio();
     }
 };
 </script>
